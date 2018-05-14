@@ -1,0 +1,5 @@
+Product_name,Price,Text
+chips_product_name,2.95,"Some text, that is on a chips bag!"
+chips_product_name_2,3.25,"Some other text that is on a chips bag"
+chips_product_name_3,1.50,"Some shorter text here"
+chips_product_name_4,3.50,"Some longer text there to differentiate the two."

@@ -1,0 +1,212 @@
+---
+title: "Analysis of German Chips Advertising Texts"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Original Study
+
+- 12 different potato chips bags
+    - 6 cheap, 6 expensive
+- only considered backs of the chips bags
+- types of phrases that were looked at
+    - **HealthyPhrases**, e.g., "low fat", "healthier", "no cholesterol", "lowest sodium level"
+    - **NaturalnessPhrases**, e.g., "natural", "real", "nothing artificial"
+    - **ComparativePhrases**, e.g., more or less, suffixes like –er, or superlative words (most, least, best, finest), "unique", "less fat than other leading brands", "best in America", "in a class of their own", "a crunchy bite you won't find in any other chip"
+    - **NegativeMarkers**, e.g., "never", "not", "no"
+    - **AuthenticityPhrases**: "We looked at this kind of traditional authenticity, measuring mentions of tradition ("family recipe"), the founding or founder of a company ("our founder..."), or mentions of America or American locations ("the great Pacific Northwest")."
+
+## Current data frame (tibble) structure
+
+- What the basic data frame/tibble will look like (rows): 
+    - Product_name, Price, Text
+- What the enriched data frame will look like (rows): 
+    - Product_name, Price, Text, PriceCategory, TotalWordCount, AverageWordLength, HealthyPhrases, NaturalnessPhrases, ComparativePhrases, NegativeMarkers, AuthenticityPhrases
+    
+## To do / To take care of
+- write Umlaute as Umlaute, otherwise word frequency doesn't work
+- put something between different messages/paragraphs to make measure for sentence length possible
+- add avg/min/max word frequency measure
+- add sentence complexity/length measure (Flesch-Kincaid readability test: weighted
+value of the length of each sentence in the text (longer sentences tend to be more complex) and the length of each word in the text in syllables (longer words tend to be harder to read): the lower the metric, the more complex the language)
+- Freedman and Jurafsky always use "per bag" measure (so total); you maybe also wanna look at the relative values, especially when there is a high difference in total word count between expensive and cheap chips bags
+
+```{r include=FALSE}
+library(tidyverse)
+library(ngramr)
+library(here)
+theme_set(theme_bw(18))
+```
+
+```{r message=FALSE, warning=FALSE}
+basic_info = read_csv(here("texts","chips_data.csv"))
+
+df = basic_info
+# for easier subsequent analysis, delete special characters from texts (think about dash again if necessary)
+df$Text = gsub(",|?|!|\\.","",df$Text) %>%
+          str_to_lower()
+
+df$PriceCategory = ifelse(df$Price >= 3,"expensive","cheap")
+
+# df$TotalWordCount = sapply(strsplit(df$Text, " "), length)
+df$TotalWordCount = str_count(df$Text, boundary("word"))
+
+# first get rid of all special characters and then count the number of characters; divide by number of words (think about dash if necessary)
+df$AverageWordLength = gsub(" |-","",df$Text) %>%
+                       nchar(type="chars")/df$TotalWordCount
+
+# average word frequency
+# df$AverageWordFreq = 
+# caution! This function is case sensitive! So you probably wanna put it before str_to_lower(), but maybe behind where you get rid of special characters
+# can maximally take 12 items
+# ask_google = ngram(c("Schnecke","Chips"), corpus = "ger_2012", year_start = 1990, year_end = 2008, smoothing = 3, count = TRUE, tag = NULL)
+
+# take care to only use lowercase letters
+df$HealthyPhrases = str_count(df$Text,pattern = "\\b(that is|some|text|i)\\b")
+df$NaturalnessPhrases = str_count(df$Text,pattern = "\\b(that is|some|text|i)\\b")
+df$ComparativePhrases = str_count(df$Text,pattern = "\\b(that is|some|text|i)\\b")
+df$NegativeMarkers = str_count(df$Text,pattern = "\\b(that is|some|text|i)\\b")
+df$AuthenticityPhrases = str_count(df$Text,pattern = "\\b(that is|some|text|i)\\b")
+
+df
+```
+
+## Plots
+
+Plot total word count of expensive against cheap chips
+
+```{r echo=FALSE}
+plot_totalWordCount = df %>%
+                 select(PriceCategory,TotalWordCount) %>%
+                 group_by(PriceCategory) %>%
+                 summarise(AvgTotalWordCount = mean(TotalWordCount))
+
+ggplot(plot_totalWordCount,aes(x=PriceCategory,y=AvgTotalWordCount)) +
+  geom_col(fill="darkblue", width=.5)
+```
+
+Plot average word length of expensive against cheap chips
+
+```{r echo=FALSE}
+plot_avgLength = df %>%
+                 select(PriceCategory,AverageWordLength) %>%
+                 group_by(PriceCategory) %>%
+                 summarise(AverageWordLength = mean(AverageWordLength))
+
+ggplot(plot_avgLength,aes(x=PriceCategory,y=AverageWordLength)) +
+  geom_col(fill="lightblue", width=.5)
+```
+
+Plot total amount of negative markers of expensive against cheap chips
+
+```{r echo=FALSE}
+plot_totalNegMarkers = df %>%
+                 select(PriceCategory,NegativeMarkers) %>%
+                 group_by(PriceCategory) %>%
+                 summarise(AvgNegativeMarkers = mean(NegativeMarkers))
+
+ggplot(plot_totalNegMarkers,aes(x=PriceCategory,y=AvgNegativeMarkers)) +
+  geom_col(fill="#e50000", width=.5)
+```
+
+<!-- Plot relative amount of negative markers (amount of negative markers divided by total word count) of expensive against cheap chips -->
+
+```{r echo=FALSE}
+# plot_relNegMarkers = df %>%
+#                  add_column(RelNegMarkers = df$NegativeMarkers/df$TotalWordCount) %>%
+#                  select(PriceCategory,RelNegMarkers) %>%
+#                  group_by(PriceCategory) %>%
+#                  summarise(AvgRelNegMarkers = mean(RelNegMarkers))
+# 
+# ggplot(plot_relNegMarkers,aes(x=PriceCategory,y=AvgRelNegMarkers)) +
+#   geom_col()
+```
+
+Plot total amount of HealthyPhrases of expensive against cheap chips
+
+```{r echo=FALSE}
+plot_HealthyPhrases = df %>%
+                 select(PriceCategory,HealthyPhrases) %>%
+                 group_by(PriceCategory) %>%
+                 summarise(AvgHealthyPhrases = mean(HealthyPhrases))
+
+ggplot(plot_HealthyPhrases,aes(x=PriceCategory,y=AvgHealthyPhrases)) +
+  geom_col(fill="#ffd162", width=.5)
+```
+
+Plot total amount of NaturalnessPhrases of expensive against cheap chips
+
+```{r echo=FALSE}
+plot_NaturalnessPhrases = df %>%
+                 select(PriceCategory,NaturalnessPhrases) %>%
+                 group_by(PriceCategory) %>%
+                 summarise(AvgNaturalnessPhrases = mean(NaturalnessPhrases))
+
+ggplot(plot_NaturalnessPhrases,aes(x=PriceCategory,y=AvgNaturalnessPhrases)) +
+  geom_col(fill="#ff841f", width=.5)
+```
+
+Plot total amount of ComparativePhrases of expensive against cheap chips
+
+```{r echo=FALSE}
+plot_ComparativePhrases = df %>%
+                 select(PriceCategory,ComparativePhrases) %>%
+                 group_by(PriceCategory) %>%
+                 summarise(AvgComparativePhrases = mean(ComparativePhrases))
+
+ggplot(plot_ComparativePhrases,aes(x=PriceCategory,y=AvgComparativePhrases)) +
+  geom_col(fill="#f1fba6", width=.5)
+```
+
+Plot total amount of AuthenticityPhrases of expensive against cheap chips
+
+```{r echo=FALSE}
+plot_AuthenticityPhrases = df %>%
+                 select(PriceCategory,AuthenticityPhrases) %>%
+                 group_by(PriceCategory) %>%
+                 summarise(AvgAuthenticityPhrases = mean(AuthenticityPhrases))
+
+ggplot(plot_AuthenticityPhrases,aes(x=PriceCategory,y=AvgAuthenticityPhrases)) +
+  geom_col(fill="#330808", width=.5)
+```
+
+Plot total amount of different phrases for expensive next to cheap chips bags
+
+```{r echo=FALSE}
+plot_Phrases = df %>%
+               gather(HealthyPhrases,NaturalnessPhrases,ComparativePhrases,NegativeMarkers,AuthenticityPhrases,key = "Phrases",value = "Occurrences") %>%
+               select(PriceCategory,Phrases,Occurrences) %>%
+               group_by(PriceCategory,Phrases) %>%
+               summarise(AvgOccurrences = mean(Occurrences))
+
+ggplot(plot_Phrases,aes(x=PriceCategory,y=AvgOccurrences,fill=Phrases)) +
+  geom_col(position = "dodge", width = .5) +
+  scale_fill_manual(values = c("#330808","#f1fba6","#ffd162","#ff841f","#e50000"))
+```
+
+Plot relative amount of different phrases for expensive next to cheap chips bags
+
+```{r echo=FALSE}
+relativePhrases = df %>%
+                  select(PriceCategory,HealthyPhrases,NaturalnessPhrases,ComparativePhrases,NegativeMarkers,AuthenticityPhrases) %>%
+                  mutate_at(vars(-PriceCategory),funs(./df$TotalWordCount))
+
+plot_relPhrases = relativePhrases %>%
+               gather(HealthyPhrases,NaturalnessPhrases,ComparativePhrases,NegativeMarkers,AuthenticityPhrases,key = "Phrases",value = "Occurrences") %>%
+               select(PriceCategory,Phrases,Occurrences) %>%
+               group_by(PriceCategory,Phrases) %>%
+               summarise(AvgRelOccurrences = mean(Occurrences))
+
+ggplot(plot_relPhrases,aes(x=PriceCategory,y=AvgRelOccurrences,fill=Phrases)) +
+  geom_col(position = "dodge", width = .5) +
+  scale_fill_manual(values = c("#330808","#f1fba6","#ffd162","#ff841f","#e50000"))
+```
+
+
+
+
+
+
