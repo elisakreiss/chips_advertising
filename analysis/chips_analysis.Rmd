@@ -38,6 +38,9 @@ value of the length of each sentence in the text (longer sentences tend to be mo
 library(tidyverse)
 library(ngramr)
 library(here)
+
+source(here("analysis","helper_scripts","helpers.r"))
+
 theme_set(theme_bw(18))
 ```
 
@@ -82,10 +85,13 @@ Plot total word count of expensive against cheap chips
 plot_totalWordCount = df %>%
                  select(PriceCategory,TotalWordCount) %>%
                  group_by(PriceCategory) %>%
-                 summarise(AvgTotalWordCount = mean(TotalWordCount))
+                 summarise(AvgTotalWordCount = mean(TotalWordCount), ci.low=ci.low(TotalWordCount), ci.high=ci.high(TotalWordCount))
+plot_totalWordCount$YMin = plot_totalWordCount$AvgTotalWordCount - plot_totalWordCount$ci.low
+plot_totalWordCount$YMax = plot_totalWordCount$AvgTotalWordCount + plot_totalWordCount$ci.high
 
 ggplot(plot_totalWordCount,aes(x=PriceCategory,y=AvgTotalWordCount)) +
-  geom_col(fill="darkblue", width=.5)
+  geom_col(fill="darkblue", width=.5) +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
 ```
 
 Plot average word length of expensive against cheap chips
@@ -94,10 +100,13 @@ Plot average word length of expensive against cheap chips
 plot_avgLength = df %>%
                  select(PriceCategory,AverageWordLength) %>%
                  group_by(PriceCategory) %>%
-                 summarise(AverageWordLength = mean(AverageWordLength))
+                 summarise(AvgAverageWordLength = mean(AverageWordLength), ci.low=ci.low(AverageWordLength), ci.high=ci.high(AverageWordLength))
+plot_avgLength$YMin = plot_avgLength$AvgAverageWordLength - plot_avgLength$ci.low
+plot_avgLength$YMax = plot_avgLength$AvgAverageWordLength + plot_avgLength$ci.high
 
-ggplot(plot_avgLength,aes(x=PriceCategory,y=AverageWordLength)) +
-  geom_col(fill="lightblue", width=.5)
+ggplot(plot_avgLength,aes(x=PriceCategory,y=AvgAverageWordLength)) +
+  geom_col(fill="lightblue", width=.5) +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
 ```
 
 Plot total amount of negative markers of expensive against cheap chips
@@ -106,10 +115,13 @@ Plot total amount of negative markers of expensive against cheap chips
 plot_totalNegMarkers = df %>%
                  select(PriceCategory,NegativeMarkers) %>%
                  group_by(PriceCategory) %>%
-                 summarise(AvgNegativeMarkers = mean(NegativeMarkers))
+                 summarise(AvgNegativeMarkers = mean(NegativeMarkers), ci.low=ci.low(NegativeMarkers), ci.high=ci.high(NegativeMarkers))
+plot_totalNegMarkers$YMin = plot_totalNegMarkers$AvgNegativeMarkers - plot_totalNegMarkers$ci.low
+plot_totalNegMarkers$YMax = plot_totalNegMarkers$AvgNegativeMarkers + plot_totalNegMarkers$ci.high
 
 ggplot(plot_totalNegMarkers,aes(x=PriceCategory,y=AvgNegativeMarkers)) +
-  geom_col(fill="#e50000", width=.5)
+  geom_col(fill="#e50000", width=.5) +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
 ```
 
 <!-- Plot relative amount of negative markers (amount of negative markers divided by total word count) of expensive against cheap chips -->
@@ -131,10 +143,13 @@ Plot total amount of HealthyPhrases of expensive against cheap chips
 plot_HealthyPhrases = df %>%
                  select(PriceCategory,HealthyPhrases) %>%
                  group_by(PriceCategory) %>%
-                 summarise(AvgHealthyPhrases = mean(HealthyPhrases))
+                 summarise(AvgHealthyPhrases = mean(HealthyPhrases), ci.low=ci.low(HealthyPhrases), ci.high=ci.high(HealthyPhrases))
+plot_HealthyPhrases$YMin = plot_HealthyPhrases$AvgHealthyPhrases - plot_HealthyPhrases$ci.low
+plot_HealthyPhrases$YMax = plot_HealthyPhrases$AvgHealthyPhrases + plot_HealthyPhrases$ci.high
 
 ggplot(plot_HealthyPhrases,aes(x=PriceCategory,y=AvgHealthyPhrases)) +
-  geom_col(fill="#ffd162", width=.5)
+  geom_col(fill="#ffd162", width=.5) +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
 ```
 
 Plot total amount of NaturalnessPhrases of expensive against cheap chips
@@ -143,10 +158,13 @@ Plot total amount of NaturalnessPhrases of expensive against cheap chips
 plot_NaturalnessPhrases = df %>%
                  select(PriceCategory,NaturalnessPhrases) %>%
                  group_by(PriceCategory) %>%
-                 summarise(AvgNaturalnessPhrases = mean(NaturalnessPhrases))
+                 summarise(AvgNaturalnessPhrases = mean(NaturalnessPhrases), ci.low=ci.low(NaturalnessPhrases), ci.high=ci.high(NaturalnessPhrases))
+plot_NaturalnessPhrases$YMin = plot_NaturalnessPhrases$AvgNaturalnessPhrases - plot_NaturalnessPhrases$ci.low
+plot_NaturalnessPhrases$YMax = plot_NaturalnessPhrases$AvgNaturalnessPhrases + plot_NaturalnessPhrases$ci.high
 
 ggplot(plot_NaturalnessPhrases,aes(x=PriceCategory,y=AvgNaturalnessPhrases)) +
-  geom_col(fill="#ff841f", width=.5)
+  geom_col(fill="#ff841f", width=.5) +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
 ```
 
 Plot total amount of ComparativePhrases of expensive against cheap chips
@@ -155,10 +173,13 @@ Plot total amount of ComparativePhrases of expensive against cheap chips
 plot_ComparativePhrases = df %>%
                  select(PriceCategory,ComparativePhrases) %>%
                  group_by(PriceCategory) %>%
-                 summarise(AvgComparativePhrases = mean(ComparativePhrases))
+                 summarise(AvgComparativePhrases = mean(ComparativePhrases), ci.low=ci.low(ComparativePhrases), ci.high=ci.high(ComparativePhrases))
+plot_ComparativePhrases$YMin = plot_ComparativePhrases$AvgComparativePhrases - plot_ComparativePhrases$ci.low
+plot_ComparativePhrases$YMax = plot_ComparativePhrases$AvgComparativePhrases + plot_ComparativePhrases$ci.high
 
 ggplot(plot_ComparativePhrases,aes(x=PriceCategory,y=AvgComparativePhrases)) +
-  geom_col(fill="#f1fba6", width=.5)
+  geom_col(fill="#f1fba6", width=.5) +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
 ```
 
 Plot total amount of AuthenticityPhrases of expensive against cheap chips
@@ -167,10 +188,13 @@ Plot total amount of AuthenticityPhrases of expensive against cheap chips
 plot_AuthenticityPhrases = df %>%
                  select(PriceCategory,AuthenticityPhrases) %>%
                  group_by(PriceCategory) %>%
-                 summarise(AvgAuthenticityPhrases = mean(AuthenticityPhrases))
+                 summarise(AvgAuthenticityPhrases = mean(AuthenticityPhrases), ci.low=ci.low(AuthenticityPhrases), ci.high=ci.high(AuthenticityPhrases))
+plot_AuthenticityPhrases$YMin = plot_AuthenticityPhrases$AvgAuthenticityPhrases - plot_AuthenticityPhrases$ci.low
+plot_AuthenticityPhrases$YMax = plot_AuthenticityPhrases$AvgAuthenticityPhrases + plot_AuthenticityPhrases$ci.high
 
 ggplot(plot_AuthenticityPhrases,aes(x=PriceCategory,y=AvgAuthenticityPhrases)) +
-  geom_col(fill="#330808", width=.5)
+  geom_col(fill="#330808", width=.5) +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
 ```
 
 Plot total amount of different phrases for expensive next to cheap chips bags
@@ -180,11 +204,14 @@ plot_Phrases = df %>%
                gather(HealthyPhrases,NaturalnessPhrases,ComparativePhrases,NegativeMarkers,AuthenticityPhrases,key = "Phrases",value = "Occurrences") %>%
                select(PriceCategory,Phrases,Occurrences) %>%
                group_by(PriceCategory,Phrases) %>%
-               summarise(AvgOccurrences = mean(Occurrences))
+               summarise(AvgOccurrences = mean(Occurrences), ci.low=ci.low(Occurrences), ci.high=ci.high(Occurrences))
+plot_Phrases$YMin = plot_Phrases$AvgOccurrences - plot_Phrases$ci.low
+plot_Phrases$YMax = plot_Phrases$AvgOccurrences + plot_Phrases$ci.high
 
 ggplot(plot_Phrases,aes(x=PriceCategory,y=AvgOccurrences,fill=Phrases)) +
-  geom_col(position = "dodge", width = .5) +
-  scale_fill_manual(values = c("#330808","#f1fba6","#ffd162","#ff841f","#e50000"))
+  geom_col(position = position_dodge(), width = .5) +
+  scale_fill_manual(values = c("#330808","#f1fba6","#ffd162","#ff841f","#e50000")) +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.2,color="grey",position = position_dodge(width=.5))
 ```
 
 Plot relative amount of different phrases for expensive next to cheap chips bags
@@ -198,11 +225,14 @@ plot_relPhrases = relativePhrases %>%
                gather(HealthyPhrases,NaturalnessPhrases,ComparativePhrases,NegativeMarkers,AuthenticityPhrases,key = "Phrases",value = "Occurrences") %>%
                select(PriceCategory,Phrases,Occurrences) %>%
                group_by(PriceCategory,Phrases) %>%
-               summarise(AvgRelOccurrences = mean(Occurrences))
+               summarise(AvgRelOccurrences = mean(Occurrences), ci.low=ci.low(Occurrences), ci.high=ci.high(Occurrences))
+plot_relPhrases$YMin = plot_relPhrases$AvgRelOccurrences - plot_relPhrases$ci.low
+plot_relPhrases$YMax = plot_relPhrases$AvgRelOccurrences + plot_relPhrases$ci.high
 
 ggplot(plot_relPhrases,aes(x=PriceCategory,y=AvgRelOccurrences,fill=Phrases)) +
-  geom_col(position = "dodge", width = .5) +
-  scale_fill_manual(values = c("#330808","#f1fba6","#ffd162","#ff841f","#e50000"))
+  geom_col(position = position_dodge(), width = .5) +
+  scale_fill_manual(values = c("#330808","#f1fba6","#ffd162","#ff841f","#e50000")) +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.2,color="grey",position = position_dodge(width=.5))
 ```
 
 
