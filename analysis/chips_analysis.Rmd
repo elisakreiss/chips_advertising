@@ -64,6 +64,7 @@ df$AverageWordLength = gsub(" |-","",df$Text) %>%
 # average word frequency
 # df$AverageWordFreq = 
 # caution! This function is case sensitive! So you probably wanna put it before str_to_lower(), but maybe behind where you get rid of special characters
+# maybe add results for upper- and lowercase together for each word
 # can maximally take 12 items
 # ask_google = ngram(c("Schnecke","Chips"), corpus = "ger_2012", year_start = 1990, year_end = 2008, smoothing = 3, count = TRUE, tag = NULL)
 
@@ -78,6 +79,9 @@ df
 ```
 
 ## Plots
+
+To plot:
+- scatterplot with continuous price on x-axis and total word count on y axis
 
 Plot total word count of expensive against cheap chips
 
