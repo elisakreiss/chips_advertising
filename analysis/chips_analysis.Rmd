@@ -22,13 +22,18 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Current data frame (tibble) structure
 
 - What the basic data frame/tibble will look like (rows): 
-    - Product_name, Price, Text
+    - Product_name, Price, PricePer100g, Weight, Text
 - What the enriched data frame will look like (rows): 
-    - Product_name, Price, Text, PriceCategory, TotalWordCount, AverageWordLength, HealthyPhrases, NaturalnessPhrases, ComparativePhrases, NegativeMarkers, AuthenticityPhrases
+    - Product_name, Price, PricePer100g, Weight, Text, PriceCategory, TotalWordCount, AverageWordLength, HealthyPhrases, NaturalnessPhrases, ComparativePhrases, NegativeMarkers, AuthenticityPhrases
+    
+## Notes about text put in data frame
+- not included:
+    - ingredients, contact details, instructions, Umfragen
     
 ## To do / To take care of
 - write Umlaute as Umlaute, otherwise word frequency doesn't work
-- put something between different messages/paragraphs to make measure for sentence length possible
+- put something between different messages/paragraphs to make measure for sentence length possible (currently dots)
+- maybe also check for "du" or "Sie" (or in general -- directly address reader?) -- probably not important
 - add avg/min/max word frequency measure
 - add sentence complexity/length measure (Flesch-Kincaid readability test: weighted
 value of the length of each sentence in the text (longer sentences tend to be more complex) and the length of each word in the text in syllables (longer words tend to be harder to read): the lower the metric, the more complex the language)
@@ -48,11 +53,12 @@ theme_set(theme_bw(18))
 basic_info = read_csv(here("texts","chips_data.csv"))
 
 df = basic_info
+
 # for easier subsequent analysis, delete special characters from texts (think about dash again if necessary)
 df$Text = gsub(",|?|!|\\.","",df$Text) %>%
           str_to_lower()
 
-df$PriceCategory = ifelse(df$Price >= 3,"expensive","cheap")
+df$PriceCategory = ifelse(df$Price >= 1.1,"expensive","cheap")
 
 # df$TotalWordCount = sapply(strsplit(df$Text, " "), length)
 df$TotalWordCount = str_count(df$Text, boundary("word"))
@@ -75,13 +81,29 @@ df$ComparativePhrases = str_count(df$Text,pattern = "\\b(that is|some|text|i)\\b
 df$NegativeMarkers = str_count(df$Text,pattern = "\\b(that is|some|text|i)\\b")
 df$AuthenticityPhrases = str_count(df$Text,pattern = "\\b(that is|some|text|i)\\b")
 
+# exclude KettleChips, because the text is only English
+df = droplevels(df[!df$Product_name=="KettleChips",])
+
 df
 ```
 
 ## Plots
 
-To plot:
-- scatterplot with continuous price on x-axis and total word count on y axis
+Plot total word count against chips prices
+
+```{r echo=FALSE}
+toplot = df
+
+ggplot(toplot,aes(x=Price,y=TotalWordCount,label=Product_name)) +
+  geom_point(color="darkblue") +
+  geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) +
+  xlim(0,2.5)
+
+ggplot(toplot,aes(x=PricePer100g,y=TotalWordCount,label=Product_name)) +
+  geom_point(color="darkblue") +
+  geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) +
+  xlim(0,2.5)
+```
 
 Plot total word count of expensive against cheap chips
 
