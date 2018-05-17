@@ -82,6 +82,7 @@ df$NegativeMarkers = str_count(df$Text,pattern = "\\b(that is|some|text|i)\\b")
 df$AuthenticityPhrases = str_count(df$Text,pattern = "\\b(that is|some|text|i)\\b")
 
 # exclude KettleChips, because the text is only English
+# think about Funny Chipsfrisch, since they were on discount price
 df = droplevels(df[!df$Product_name=="KettleChips",])
 
 df
