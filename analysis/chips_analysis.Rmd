@@ -1,43 +1,35 @@
 ---
 title: "Analysis of German Chips Advertising Texts"
-output: html_document
+output:
+  html_document:
+    theme: paper
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Original Study
+## General remarks about the data
 
-- 12 different potato chips bags
-    - 6 cheap, 6 expensive
-- only considered backs of the chips bags
-- types of phrases that were looked at
-    - **HealthyPhrases**, e.g., "low fat", "healthier", "no cholesterol", "lowest sodium level"
-    - **NaturalnessPhrases**, e.g., "natural", "real", "nothing artificial"
-    - **ComparativePhrases**, e.g., more or less, suffixes like –er, or superlative words (most, least, best, finest), "unique", "less fat than other leading brands", "best in America", "in a class of their own", "a crunchy bite you won't find in any other chip"
-    - **NegativeMarkers**, e.g., "never", "not", "no"
-    - **AuthenticityPhrases**: "We looked at this kind of traditional authenticity, measuring mentions of tradition ("family recipe"), the founding or founder of a company ("our founder..."), or mentions of America or American locations ("the great Pacific Northwest")."
+I have collected 27 different chips bags from x stores. I considered each bag which contained "normal" chips, i.e., no riffled in any other way themed type. From those different kinds, I chose (what I considered as) the most basic flavor. Preferably, this was salt (*name chips bags*), but, if this wasn't available, bell pepper (*name chips bags*), salt and pepper (*name chips bags*), salt and vinegar (*name chips bags*) or chives and sour cream (*name chips bags*). The chips bags range from 110g to 200g. In contrast to the original study by Freedman and Jurafsky, I considered the front and the back side of the chips bags, since the content in the front was often very meaningful and non-neglectable. The text in the data includes all text on the bags (including repetitions and brand names) except for instructions how to store them, the obligatory list of ingredients, the table with nutritional values, the recommended portion size, the store brand (e.g., what Edeka would be for Gut & Günstig chips, or Rewe for ja! chips), contact information (e.g., address and phone number of the company), complaint information, surveys, recommendations for other products and trade-mark information. However, it is worth mentioning, that if the list of ingredients included a reference to biological farming or that the product is vegan or similar, this information was included. One last very important thing that was left out, was translations. Those were picked up in the analysis in the end, but are excluded in general since they don't contribute any new information and just address different audiences.
 
-## Current data frame (tibble) structure
+#### Current data frame (tibble) structure
 
 - What the basic data frame/tibble will look like (rows): 
     - Product_name, Price, PricePer100g, Weight, Text
 - What the enriched data frame will look like (rows): 
-    - Product_name, Price, PricePer100g, Weight, Text, PriceCategory, TotalWordCount, AverageWordLength, HealthyPhrases, NaturalnessPhrases, ComparativePhrases, NegativeMarkers, AuthenticityPhrases
+    - Product_name, Price, PricePer100g, Weight, Text, PriceCategory, TotalWordCount, AverageWordLength, HealthyPhrases, ComparativePhrases, NegativeMarkers, NaturalnessPhrases, IngredientPhrases, ProcessPhrases, HistoricityPhrases, LocationPhrases, LicensePhrases, AuthenticityPhrases, DistinctivePhrases
     
-## Notes about text put in data frame
-- not included:
-    - ingredients, contact details, instructions, Umfragen
-    
-## To do / To take care of
+#### To do / To take care of
 - write Umlaute as Umlaute, otherwise word frequency doesn't work
 - put something between different messages/paragraphs to make measure for sentence length possible (currently dots)
-- maybe also check for "du" or "Sie" (or in general -- directly address reader?) -- probably not important
 - add avg/min/max word frequency measure
-- add sentence complexity/length measure (Flesch-Kincaid readability test: weighted
-value of the length of each sentence in the text (longer sentences tend to be more complex) and the length of each word in the text in syllables (longer words tend to be harder to read): the lower the metric, the more complex the language)
+- add sentence complexity/length measure (Flesch-Kincaid readability test: weighted value of the length of each sentence in the text (longer sentences tend to be more complex) and the length of each word in the text in syllables (longer words tend to be harder to read): the lower the metric, the more complex the language)
 - Freedman and Jurafsky always use "per bag" measure (so total); you maybe also wanna look at the relative values, especially when there is a high difference in total word count between expensive and cheap chips bags
+- for binary evaluation, you might wanna consider outlier detection and removal
+- in general, maybe don't use binary but continuous scale
+- compare number of foreign words
+- compare total word count including translations
 
 ```{r include=FALSE}
 library(tidyverse)
@@ -49,17 +41,32 @@ source(here("analysis","helper_scripts","helpers.r"))
 theme_set(theme_bw(18))
 ```
 
-```{r message=FALSE, warning=FALSE}
+## General data considerations
+
+**Language**: There are four chips bags (KettleChips, Tyrrells, LentilChips, HandCookedChips) that don't contain German advertisement (or only in the list of ingredients). One could argue that those (mostly imports from the UK) don't portray a typically German advertisement strategy and therefore it can be argued, that they should be excluded.
+The other problem to face are the amount of translations. Some chips bags don't contain any translations at all (e.g., Lays, JedenTagChips), whereas others (e.g., DeRit) have various translations of their full advertisements resulting in less space for German. Since translations are so far not included in the transcribed texts, the German total word count doesn't reflect the overall total word count.
+
+**Weight**: The weights of the bags range from 110g to 200g. In my opinion, it is reasonable to assume that the difference between 200g and 175g is neglectable, since the package size does not change a lot. This might still be true for 150g, but from that point on, the packaging becomes perceivably smaller. This means that the amount of space for text decreases and could therefore highly influence an analysis considering total instead of relative amounts. Also smaller sizes might address a different audience. It is therefore worth considering to exclude bags that are lighter (and therefore smaller) than some threshold.
+
+Choosing a **price threshold**: (elaborate here, also see total word count analysis)
+
+```{r include=FALSE, message=FALSE, warning=FALSE}
 basic_info = read_csv(here("texts","chips_data.csv"))
 
 df = basic_info
+
+# think about KettleChips, Tyrrells, LentilChips and HandCookedChips, because the text is only English
+# think about bags with less than 125g, since the bags are a lot smaller
+# think about Funny Chipsfrisch and Trafo, since they were on discount price
+# df = droplevels(df[!(df$Product_name=="KettleChips" | df$Product_name=="Tyrrells" | df$Product_name=="LentilChips" | df$Product_name=="HandCookedChips"),])
+df = droplevels(df[df$Weight>=125,])
 
 # for easier subsequent analysis, delete special characters from texts (think about dash again if necessary)
 df$Text = gsub(",|?|!|\\.","",df$Text) %>%
           str_to_lower()
 
 df$PriceCategory = ifelse(df$Price >= 1.5,"expensive","cheap")
-# df$PriceCategory = ifelse(df$PricePer100g >= 1,"expensive","cheap")
+# df$PriceCategory = ifelse(df$PricePer100g > 1,"expensive","cheap")
 
 # df$TotalWordCount = sapply(strsplit(df$Text, " "), length)
 df$TotalWordCount = str_count(df$Text, boundary("word"))
@@ -74,45 +81,69 @@ df$AverageWordLength = gsub(" |-","",df$Text) %>%
 # maybe add results for upper- and lowercase together for each word
 # can maximally take 12 items
 # ask_google = ngram(c("Schnecke","Chips"), corpus = "ger_2012", year_start = 1990, year_end = 2008, smoothing = 3, count = TRUE, tag = NULL)
-
-# take care to only use lowercase letters
-df$HealthyPhrases = str_count(df$Text,pattern = "\\b(hohen anteil an ungesättigten fettsäuren|reich an einfach ungesättigten fettsäuren|ohne gluten|glutenfrei|gluten free|vegetariergeeignet|ohne hefeextrakt|ohne konservierungsstoffe)\\b")
-df$NaturalnessPhrases = str_count(df$Text,pattern = "((\\b(ohne künstliche aromen|ohne konservierungsstoffe|ohne zusatz von geschmacksverstärkenden zusatzstoffen|100%|ohne geschmacksverstärker|von natur aus|natural)\\b)|(\\b(bio|biologisch|einfach|natürlich|organic|pur|rein|ungehärtet|unverfälscht)))")
-# like this "besonderesen" is possible
-df$ComparativePhrases = str_count(df$Text,pattern = "((\\b(unverwechselbar|nr 1|longer fried than regular chips|more|erstklassige Zutaten)\\b)|(außergewöhnlich|besonder|beste|extra|feinste|größte|höchste))")
-df$NegativeMarkers = str_count(df$Text,pattern = "(((frei)\\b)|(\\b(ohne)\\b)|(\\b(un)))")
-# recognizes "in 30 generation" as well
-df$AuthenticityPhrases = str_count(df$Text,pattern = "\\b(deutschen anbauregionen|vertragsbauern|deutsche(n?) hersteller(n?)|aus deutschland|aus den niederlanden oder deutschland|dorfchips|aus eigenem anbau|aus eigener produktion|familienbetrieb|familieneigenen kartoffelhof|in 3. generation|hand cooked|heimat|johannings kartoffelhof|landkartoffelchips|ländlich-rustikal|landwirt|lüneburger heide, oberpfalz und niederbayern|regionale kartoffeln|aus den regionen|reinheitsgebot|nach alter tradition|aus unserem eigenen vertragsanbau|wochenmarkt|für die menschen von hier)\\b")
-df$LicensePhrases = str_count(df$Text,pattern = "\\b(garantie|garantiert|kontrolliert|kontrolliertem|qualifikationskontrolle|qualität|qualitäts-garantie|markenqualität|reinheitsgebot)\\b")
-
-# think about KettleChips and HandCookedChips, because the text is only English
-# think about Funny Chipsfrisch and Trafo, since they were on discount price
-# df = droplevels(df[!df$Product_name=="KettleChips",])
-
-df
 ```
+
+## Categorization
+
+Special phrases used in the advertisement are sorted into the following main categories: HealthyPhrases, DistinctivePhrases, AuthenticityPhrases and LicensePhrases. <br>
+<br>
+**HealthyPhrases**: The category HealthyPhrases also appears in the original study by Freedman and Jurafsky. <br>
+Original (and translated) examples: ohne Konservierungsstoffe (no preservatives), glutenfrei (gluten free), vegetarier geeignet (suitable for vegetarians), reich an ungesättigten fettsäuren (rich in unsaturated fatty acids) <br>
+**DistinctivePhrases**: The category DistinctivePhrases also appears in the original study by Freedman and Jurafsky. In their study, it was further subdivided into UniquePhrases, ComparativePhrases and NegativeMarkers. Currently, I have UniquePhrases and ComparativePhrases summarized as ComparativePhrases.
+Original (and translated) examples for ComparativePhrases: beste (best), einzigartig (unique), außergewöhnlich (extraordinary) <br>
+Original (and translated) examples for NegativeMarkers: ohne (no/without), -frei (-free) <br>
+**AuthenticityPhrases**: The category DistinctivePhrases also appears in the original study by Freedman and Jurafsky. Just as in their study, I further subdivided it into NaturalnessPhrases, HistoricityPhrases, LocationPhrases, IngredientPhrases and ProcessPhrases.  <br>
+NaturalnessPhrases emphasize that there is nothing artificial about the product('s ingredients). <br>
+HistoricityPhrases make the company more approachable for example by referring to their history or to specific people who are responsible for farming/cooking. <br>
+LocationPhrases refer to places that the reader can connect to, such as "Germany", "England", but also "home" and "local". <br>
+IngredientPhrases are descriptions of ingredients. <br>
+ProcessPhrases is all language that is used to describe what is done to the ingredients. <br>
+**LicensePhrases**: LicensePhrases were not part of the original study by Freedman and Jurafsky, but at least in German advertisement, it represents a quite frequently category of phrases. Comprised in this category are words such as "guaranteed", "controlled" and "certified".
+
+```{r}
+# take care to only use lowercase letters
+
+df$HealthyPhrases = str_count(df$Text,pattern = "(\\b(ohne konservierungsstoffe|ohne hefeextrakt|ohne gluten|glutenfrei|gluten free|gluten-free|suitable for vegans|vegetariergeeignet|vegetarier geeignet|hohen anteil an ungesättigten fettsäuren|reich an einfach ungesättigten fettsäuren|reich an ungesättigten fettsäuren|less fat|average fat reduced|no added sugar)\\b|\\b(frisch))")
+
+# df$UniquePhrases
+df$ComparativePhrases = str_count(df$Text,pattern = "(\\b(speziell|beste|größte|höchste|besonder|extra|unverwechselbar|unvergleichlich|außergewöhnlich|perfekt|einzigartig|erstklassig)|\\b(thicker|longer fried than regular chips|more|most|less|finest|feinste|premium|nr 1|funny-frische knusprigkeit|unique|signature crunch)\\b)")
+df$NegativeMarkers = str_count(df$Text,pattern = "(\\b(ohne|never|free|no)\\b|(frei)\\b)")
+
+df$NaturalnessPhrases = str_count(df$Text,pattern = "(\\b(unverfälscht|natürliche|pur|rein|frisch|biologisch|ungehärtet)|\\b(ohne künstliche aromen|ohne künstliche farbstoffe|ohne zusatz von geschmacksverstärkenden zusatzstoffen|ohne geschmacksverstärker|von natur aus|bio|100%|never use artificial flavors and colors|ohne hefeextrakt|real|bio-organic|organic|organics|natural|no artificial ingredients)\\b)")
+df$IngredientPhrases = str_count(df$Text,pattern = "((kartoffel|salz|paprika|essig)|\\b(zutat|verwende)|\\b(sonnenblumenöl|sunflower oil|pfeffer|sauerrahm|schnittlauch|rosmarin|gewürze|gewürzt|würzen|würzung|würzmischung|food ingredients|salt|vinegar|spices|pepper|potatoes|made with)\\b)")
+df$ProcessPhrases = str_count(df$Text,pattern = "(\\b(hergestellt|herstellung|gebacken|verlässt das werk|verarbeitung|geröstet|gewürzt|würzen|würzung|gesalzen|ernten|gewaschen|geschnitten|frittiert|wählen|gerührt|kochen|gekocht|gebacken|backen|ausgebacken|bei der produktion|schneiden|verfeinert|zubereitung|von hand|handgefertigte|handgekochte|hand cooked|hand-cooked|we season our chips|we only cook our chips in sunflower oil|sliced|salted|thick cut|fried|cracked|spun)\\b|\\b(ausgesucht|ausgewählt|erlesen|gemahlen))")
+# ländlich-rustikal (HiP or LoP?); aus eigener produktion (HiP?); die einfachen Dinge/mehr braucht es nicht (CP or HiP?); ehrlich (? HiP?)
+# 3. could become 30
+df$HistoricityPhrases = str_count(df$Text,pattern = "(\\b(seit 2010|1969|time-honoured|heiner|heiner & martin|reinheitsgebot|aus unserem eigenen vertragsanbau|familienbetrieb|wochenmarkt|ländlich-rustikal|wir von lorenz snack-world|aus eigener produktion|johannings kartoffelhof|in 3. generation|nach alter tradition|von ausgesuchten vertragsbauern|traditional|in kessel nr 4|David)\\b|\\b(landwirt|familieneigen))")
+# auf dem familieneigenen kartoffelhof (LoP?)
+df$LocationPhrases = str_count(df$Text,pattern = "(\\b(aus unserem eigenen vertragsanbau|dorfchips|heimat|von deutschen herstellern|für die menschen von hier|aus besten deutschen anbauregionen|ländlich-rustikal|aus den regionen lüneburger heide, oberpfalz und niederbayern|auf dem familieneigenen kartoffelhof|aus deutschland|aus den niederlanden oder deutschland|deutschland|vereinigten königreich|english|england|local)\\b|\\b(regional))")
+
+df$LicensePhrases = str_count(df$Text,pattern = "(\\b(goldener preis|reinheitsgebot|qualitäts-garantie|zufriedenheitsgarantie|qualitätsversprechen|markenqualität|qualität|garantie|qualitätskontrolle|certified|fresenius)\\b|\\b(garantier|kontrollier))")
+
+# summaries
+df$AuthenticityPhrases = df$NaturalnessPhrases + df$IngredientPhrases + df$ProcessPhrases + df$HistoricityPhrases + df$LocationPhrases
+df$DistinctivePhrases = df$ComparativePhrases + df$NegativeMarkers
+```
+
+
 
 ## Plots
 
-Plot total word count against chips prices
+Plot **total word count** against chips prices
 
 ```{r echo=FALSE}
 toplot = df
 
 ggplot(toplot,aes(x=Price,y=TotalWordCount,label=Product_name)) +
-  geom_point(color="darkblue") +
+  geom_point(color="darkgreen") +
   geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) +
   xlim(0,2.5)
 
 ggplot(toplot,aes(x=PricePer100g,y=TotalWordCount,label=Product_name)) +
-  geom_point(color="darkblue") +
+  geom_point(color="darkgreen") +
   geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) +
   xlim(0,2.5)
-```
 
-Plot total word count of expensive against cheap chips
-
-```{r echo=FALSE}
 plot_totalWordCount = df %>%
                  select(PriceCategory,TotalWordCount) %>%
                  group_by(PriceCategory) %>%
@@ -121,13 +152,19 @@ plot_totalWordCount$YMin = plot_totalWordCount$AvgTotalWordCount - plot_totalWor
 plot_totalWordCount$YMax = plot_totalWordCount$AvgTotalWordCount + plot_totalWordCount$ci.high
 
 ggplot(plot_totalWordCount,aes(x=PriceCategory,y=AvgTotalWordCount)) +
-  geom_col(fill="darkblue", width=.5) +
+  geom_col(fill="darkgreen", width=.5) +
   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
 ```
 
-Plot average word length of expensive against cheap chips
+Plot **average word length** of expensive against cheap chips
 
 ```{r echo=FALSE}
+toplot = df
+
+ggplot(toplot,aes(x=Price,y=AverageWordLength)) +
+  geom_point(color="lightgreen") +
+  geom_text(aes(label=Product_name),hjust=1, vjust=-0.5)
+
 plot_avgLength = df %>%
                  select(PriceCategory,AverageWordLength) %>%
                  group_by(PriceCategory) %>%
@@ -136,118 +173,15 @@ plot_avgLength$YMin = plot_avgLength$AvgAverageWordLength - plot_avgLength$ci.lo
 plot_avgLength$YMax = plot_avgLength$AvgAverageWordLength + plot_avgLength$ci.high
 
 ggplot(plot_avgLength,aes(x=PriceCategory,y=AvgAverageWordLength)) +
-  geom_col(fill="lightblue", width=.5) +
+  geom_col(fill="lightgreen", width=.5) +
   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
 ```
 
-Plot total amount of negative markers of expensive against cheap chips
-
-```{r echo=FALSE}
-plot_totalNegMarkers = df %>%
-                 select(PriceCategory,NegativeMarkers) %>%
-                 group_by(PriceCategory) %>%
-                 summarise(AvgNegativeMarkers = mean(NegativeMarkers), ci.low=ci.low(NegativeMarkers), ci.high=ci.high(NegativeMarkers))
-plot_totalNegMarkers$YMin = plot_totalNegMarkers$AvgNegativeMarkers - plot_totalNegMarkers$ci.low
-plot_totalNegMarkers$YMax = plot_totalNegMarkers$AvgNegativeMarkers + plot_totalNegMarkers$ci.high
-
-ggplot(plot_totalNegMarkers,aes(x=PriceCategory,y=AvgNegativeMarkers)) +
-  geom_col(fill="#e50000", width=.5) +
-  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
-```
-
-<!-- Plot relative amount of negative markers (amount of negative markers divided by total word count) of expensive against cheap chips -->
-
-```{r echo=FALSE}
-# plot_relNegMarkers = df %>%
-#                  add_column(RelNegMarkers = df$NegativeMarkers/df$TotalWordCount) %>%
-#                  select(PriceCategory,RelNegMarkers) %>%
-#                  group_by(PriceCategory) %>%
-#                  summarise(AvgRelNegMarkers = mean(RelNegMarkers))
-# 
-# ggplot(plot_relNegMarkers,aes(x=PriceCategory,y=AvgRelNegMarkers)) +
-#   geom_col()
-```
-
-Plot total amount of HealthyPhrases of expensive against cheap chips
-
-```{r echo=FALSE}
-plot_HealthyPhrases = df %>%
-                 select(PriceCategory,HealthyPhrases) %>%
-                 group_by(PriceCategory) %>%
-                 summarise(AvgHealthyPhrases = mean(HealthyPhrases), ci.low=ci.low(HealthyPhrases), ci.high=ci.high(HealthyPhrases))
-plot_HealthyPhrases$YMin = plot_HealthyPhrases$AvgHealthyPhrases - plot_HealthyPhrases$ci.low
-plot_HealthyPhrases$YMax = plot_HealthyPhrases$AvgHealthyPhrases + plot_HealthyPhrases$ci.high
-
-ggplot(plot_HealthyPhrases,aes(x=PriceCategory,y=AvgHealthyPhrases)) +
-  geom_col(fill="#ffd162", width=.5) +
-  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
-```
-
-Plot total amount of NaturalnessPhrases of expensive against cheap chips
-
-```{r echo=FALSE}
-plot_NaturalnessPhrases = df %>%
-                 select(PriceCategory,NaturalnessPhrases) %>%
-                 group_by(PriceCategory) %>%
-                 summarise(AvgNaturalnessPhrases = mean(NaturalnessPhrases), ci.low=ci.low(NaturalnessPhrases), ci.high=ci.high(NaturalnessPhrases))
-plot_NaturalnessPhrases$YMin = plot_NaturalnessPhrases$AvgNaturalnessPhrases - plot_NaturalnessPhrases$ci.low
-plot_NaturalnessPhrases$YMax = plot_NaturalnessPhrases$AvgNaturalnessPhrases + plot_NaturalnessPhrases$ci.high
-
-ggplot(plot_NaturalnessPhrases,aes(x=PriceCategory,y=AvgNaturalnessPhrases)) +
-  geom_col(fill="#ff841f", width=.5) +
-  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
-```
-
-Plot total amount of ComparativePhrases of expensive against cheap chips
-
-```{r echo=FALSE}
-plot_ComparativePhrases = df %>%
-                 select(PriceCategory,ComparativePhrases) %>%
-                 group_by(PriceCategory) %>%
-                 summarise(AvgComparativePhrases = mean(ComparativePhrases), ci.low=ci.low(ComparativePhrases), ci.high=ci.high(ComparativePhrases))
-plot_ComparativePhrases$YMin = plot_ComparativePhrases$AvgComparativePhrases - plot_ComparativePhrases$ci.low
-plot_ComparativePhrases$YMax = plot_ComparativePhrases$AvgComparativePhrases + plot_ComparativePhrases$ci.high
-
-ggplot(plot_ComparativePhrases,aes(x=PriceCategory,y=AvgComparativePhrases)) +
-  geom_col(fill="#f1fba6", width=.5) +
-  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
-```
-
-Plot total amount of AuthenticityPhrases of expensive against cheap chips
-
-```{r echo=FALSE}
-plot_AuthenticityPhrases = df %>%
-                 select(PriceCategory,AuthenticityPhrases) %>%
-                 group_by(PriceCategory) %>%
-                 summarise(AvgAuthenticityPhrases = mean(AuthenticityPhrases), ci.low=ci.low(AuthenticityPhrases), ci.high=ci.high(AuthenticityPhrases))
-plot_AuthenticityPhrases$YMin = plot_AuthenticityPhrases$AvgAuthenticityPhrases - plot_AuthenticityPhrases$ci.low
-plot_AuthenticityPhrases$YMax = plot_AuthenticityPhrases$AvgAuthenticityPhrases + plot_AuthenticityPhrases$ci.high
-
-ggplot(plot_AuthenticityPhrases,aes(x=PriceCategory,y=AvgAuthenticityPhrases)) +
-  geom_col(fill="#330808", width=.5) +
-  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
-```
-
-Plot total amount of NaturalnessPhrases of expensive against cheap chips
-
-```{r echo=FALSE}
-plot_LicensePhrases = df %>%
-                 select(PriceCategory,LicensePhrases) %>%
-                 group_by(PriceCategory) %>%
-                 summarise(AvgLicensePhrases = mean(LicensePhrases), ci.low=ci.low(LicensePhrases), ci.high=ci.high(LicensePhrases))
-plot_LicensePhrases$YMin = plot_LicensePhrases$AvgLicensePhrases - plot_LicensePhrases$ci.low
-plot_LicensePhrases$YMax = plot_LicensePhrases$AvgLicensePhrases + plot_LicensePhrases$ci.high
-
-ggplot(plot_LicensePhrases,aes(x=PriceCategory,y=AvgLicensePhrases)) +
-  geom_col(fill="#ff841f", width=.5) +
-  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
-```
-
-Plot total amount of different phrases for expensive next to cheap chips bags
+Plot **total amount of different phrases** for expensive next to cheap chips bags
 
 ```{r echo=FALSE}
 plot_Phrases = df %>%
-               gather(HealthyPhrases,NaturalnessPhrases,ComparativePhrases,NegativeMarkers,AuthenticityPhrases,LicensePhrases,key = "Phrases",value = "Occurrences") %>%
+               gather(HealthyPhrases,DistinctivePhrases,AuthenticityPhrases,LicensePhrases,key = "Phrases",value = "Occurrences") %>%
                select(PriceCategory,Phrases,Occurrences) %>%
                group_by(PriceCategory,Phrases) %>%
                summarise(AvgOccurrences = mean(Occurrences), ci.low=ci.low(Occurrences), ci.high=ci.high(Occurrences))
@@ -256,19 +190,21 @@ plot_Phrases$YMax = plot_Phrases$AvgOccurrences + plot_Phrases$ci.high
 
 ggplot(plot_Phrases,aes(x=PriceCategory,y=AvgOccurrences,fill=Phrases)) +
   geom_col(position = position_dodge(), width = .5) +
-  scale_fill_manual(values = c("#330808","#f1fba6","#ffd162","#ff841f","#e50000","green")) +
+  theme(legend.position="top") +
+  scale_fill_manual(values = c("#F9BA32","#426E86","#F8F1E5","#2F3131"),
+                    labels=c("Authenticity", "Distinctive", "Healthy", "License")) +
   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.2,color="grey",position = position_dodge(width=.5))
 ```
 
-Plot relative amount of different phrases for expensive next to cheap chips bags
+Plot **relative amount of different phrases** for expensive next to cheap chips bags
 
 ```{r echo=FALSE}
 relativePhrases = df %>%
-                  select(PriceCategory,HealthyPhrases,NaturalnessPhrases,ComparativePhrases,NegativeMarkers,AuthenticityPhrases,LicensePhrases) %>%
+                  select(PriceCategory,HealthyPhrases,DistinctivePhrases,AuthenticityPhrases,LicensePhrases) %>%
                   mutate_at(vars(-PriceCategory),funs(./df$TotalWordCount))
 
 plot_relPhrases = relativePhrases %>%
-               gather(HealthyPhrases,NaturalnessPhrases,ComparativePhrases,NegativeMarkers,AuthenticityPhrases,key = "Phrases",value = "Occurrences") %>%
+               gather(HealthyPhrases,DistinctivePhrases,AuthenticityPhrases,LicensePhrases,key = "Phrases",value = "Occurrences") %>%
                select(PriceCategory,Phrases,Occurrences) %>%
                group_by(PriceCategory,Phrases) %>%
                summarise(AvgRelOccurrences = mean(Occurrences), ci.low=ci.low(Occurrences), ci.high=ci.high(Occurrences))
@@ -277,12 +213,342 @@ plot_relPhrases$YMax = plot_relPhrases$AvgRelOccurrences + plot_relPhrases$ci.hi
 
 ggplot(plot_relPhrases,aes(x=PriceCategory,y=AvgRelOccurrences,fill=Phrases)) +
   geom_col(position = position_dodge(), width = .5) +
-  scale_fill_manual(values = c("#330808","#f1fba6","#ffd162","#ff841f","#e50000","green")) +
+  theme(legend.position="top") +
+  scale_fill_manual(values = c("#F9BA32","#426E86","#F8F1E5","#2F3131"),
+                    labels=c("Authenticity", "Distinctive", "Healthy", "License")) +
   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.2,color="grey",position = position_dodge(width=.5))
 ```
 
+Plot **total amount of different DistinctivePhrases** for expensive next to cheap chips bags
+
+```{r echo=FALSE}
+plot_Phrases = df %>%
+               gather(ComparativePhrases,NegativeMarkers,key = "Phrases",value = "Occurrences") %>%
+               select(PriceCategory,Phrases,Occurrences) %>%
+               group_by(PriceCategory,Phrases) %>%
+               summarise(AvgOccurrences = mean(Occurrences), ci.low=ci.low(Occurrences), ci.high=ci.high(Occurrences))
+plot_Phrases$YMin = plot_Phrases$AvgOccurrences - plot_Phrases$ci.low
+plot_Phrases$YMax = plot_Phrases$AvgOccurrences + plot_Phrases$ci.high
+
+ggplot(plot_Phrases,aes(x=PriceCategory,y=AvgOccurrences,fill=Phrases)) +
+  geom_col(position = position_dodge(), width = .5) +
+  theme(legend.position="top") +
+  scale_fill_manual(values = c("#a0b6c2","#2e4d5d"),
+                    labels=c("Comparative", "Negative")) +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.2,color="grey",position = position_dodge(width=.5))
+```
+
+Plot **relative amount of different DistinctivePhrases** for expensive next to cheap chips bags
+
+```{r echo=FALSE}
+relativePhrases = df %>%
+                  select(PriceCategory,ComparativePhrases,NegativeMarkers) %>%
+                  mutate_at(vars(-PriceCategory),funs(./df$TotalWordCount))
+
+plot_relPhrases = relativePhrases %>%
+               gather(ComparativePhrases,NegativeMarkers,key = "Phrases",value = "Occurrences") %>%
+               select(PriceCategory,Phrases,Occurrences) %>%
+               group_by(PriceCategory,Phrases) %>%
+               summarise(AvgRelOccurrences = mean(Occurrences), ci.low=ci.low(Occurrences), ci.high=ci.high(Occurrences))
+plot_relPhrases$YMin = plot_relPhrases$AvgRelOccurrences - plot_relPhrases$ci.low
+plot_relPhrases$YMax = plot_relPhrases$AvgRelOccurrences + plot_relPhrases$ci.high
+
+ggplot(plot_relPhrases,aes(x=PriceCategory,y=AvgRelOccurrences,fill=Phrases)) +
+  geom_col(position = position_dodge(), width = .5) +
+  theme(legend.position="top") +
+  scale_fill_manual(values = c("#a0b6c2","#2e4d5d"),
+                    labels=c("Comparative", "Negative")) +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.2,color="grey",position = position_dodge(width=.5))
+```
+
+Plot **total amount of different AuthenticityPhrases** for expensive next to cheap chips bags
+
+```{r echo=FALSE}
+plot_Phrases = df %>%
+               gather(NaturalnessPhrases,IngredientPhrases,ProcessPhrases,HistoricityPhrases,LocationPhrases,key = "Phrases",value = "Occurrences") %>%
+               select(PriceCategory,Phrases,Occurrences) %>%
+               group_by(PriceCategory,Phrases) %>%
+               summarise(AvgOccurrences = mean(Occurrences), ci.low=ci.low(Occurrences), ci.high=ci.high(Occurrences))
+plot_Phrases$YMin = plot_Phrases$AvgOccurrences - plot_Phrases$ci.low
+plot_Phrases$YMax = plot_Phrases$AvgOccurrences + plot_Phrases$ci.high
+
+ggplot(plot_Phrases,aes(x=PriceCategory,y=AvgOccurrences,fill=Phrases)) +
+  geom_col(position = position_dodge(), width = .5) +
+  theme(legend.position="top") +
+  scale_fill_manual(values = c("#fce3ad","#fac75a","#e0a72d","#ae8223","#634a14"),
+                    # labels=c("Historicity", "Ingredient", "Location", "Naturalness", "Process")) +
+                    labels=c("Historicity", "Ingredient", "Location", "Natural", "Process")) +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.2,color="grey",position = position_dodge(width=.5))
+```
+
+Plot **relative amount of different AuthenticityPhrases** for expensive next to cheap chips bags
+
+```{r echo=FALSE}
+relativePhrases = df %>%
+                  select(PriceCategory,NaturalnessPhrases,IngredientPhrases,ProcessPhrases,HistoricityPhrases,LocationPhrases) %>%
+                  mutate_at(vars(-PriceCategory),funs(./df$TotalWordCount))
+
+plot_relPhrases = relativePhrases %>%
+               gather(NaturalnessPhrases,IngredientPhrases,ProcessPhrases,HistoricityPhrases,LocationPhrases,key = "Phrases",value = "Occurrences") %>%
+               select(PriceCategory,Phrases,Occurrences) %>%
+               group_by(PriceCategory,Phrases) %>%
+               summarise(AvgRelOccurrences = mean(Occurrences), ci.low=ci.low(Occurrences), ci.high=ci.high(Occurrences))
+plot_relPhrases$YMin = plot_relPhrases$AvgRelOccurrences - plot_relPhrases$ci.low
+plot_relPhrases$YMax = plot_relPhrases$AvgRelOccurrences + plot_relPhrases$ci.high
+
+ggplot(plot_relPhrases,aes(x=PriceCategory,y=AvgRelOccurrences,fill=Phrases)) +
+  geom_col(position = position_dodge(), width = .5) +
+  theme(legend.position="top") +
+  scale_fill_manual(values = c("#fce3ad","#fac75a","#e0a72d","#ae8223","#634a14"),
+                    # labels=c("Historicity", "Ingredient", "Location", "Naturalness", "Process")) +
+                    labels=c("Historicity", "Ingredient", "Location", "Natural", "Process")) +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.2,color="grey",position = position_dodge(width=.5))
+```
+
+<!-- ## OTHER -->
 
 
+<!-- Plot **total amount of HealthyPhrases** of expensive against cheap chips -->
 
+<!-- ```{r echo=FALSE} -->
+<!-- toplot = df -->
+
+<!-- ggplot(toplot,aes(x=Price,y=HealthyPhrases)) + -->
+<!--   geom_point(size= 2,color="#F8F1E5") + -->
+<!--   geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) -->
+
+<!-- plot_HealthyPhrases = df %>% -->
+<!--                  select(PriceCategory,HealthyPhrases) %>% -->
+<!--                  group_by(PriceCategory) %>% -->
+<!--                  summarise(AvgHealthyPhrases = mean(HealthyPhrases), ci.low=ci.low(HealthyPhrases), ci.high=ci.high(HealthyPhrases)) -->
+<!-- plot_HealthyPhrases$YMin = plot_HealthyPhrases$AvgHealthyPhrases - plot_HealthyPhrases$ci.low -->
+<!-- plot_HealthyPhrases$YMax = plot_HealthyPhrases$AvgHealthyPhrases + plot_HealthyPhrases$ci.high -->
+
+<!-- ggplot(plot_HealthyPhrases,aes(x=PriceCategory,y=AvgHealthyPhrases)) + -->
+<!--   geom_col(fill="#F8F1E5", width=.5) + -->
+<!--   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey") -->
+<!-- ``` -->
+
+<!-- Plot **total amount of DistinctivePhrases** of expensive against cheap chips -->
+
+<!-- ```{r echo=FALSE} -->
+<!-- toplot = df -->
+
+<!-- ggplot(toplot,aes(x=Price,y=DistinctivePhrases)) + -->
+<!--   geom_point(color="#426E86") + -->
+<!--   geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) -->
+
+<!-- plot_DistinctivePhrases = df %>% -->
+<!--                  select(PriceCategory,DistinctivePhrases) %>% -->
+<!--                  group_by(PriceCategory) %>% -->
+<!--                  summarise(AvgDistinctivePhrases = mean(DistinctivePhrases), ci.low=ci.low(DistinctivePhrases), ci.high=ci.high(DistinctivePhrases)) -->
+<!-- plot_DistinctivePhrases$YMin = plot_DistinctivePhrases$AvgDistinctivePhrases - plot_DistinctivePhrases$ci.low -->
+<!-- plot_DistinctivePhrases$YMax = plot_DistinctivePhrases$AvgDistinctivePhrases + plot_DistinctivePhrases$ci.high -->
+
+<!-- ggplot(plot_DistinctivePhrases,aes(x=PriceCategory,y=AvgDistinctivePhrases)) + -->
+<!--   geom_col(fill="#426E86", width=.5) + -->
+<!--   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey") -->
+<!-- ``` -->
+
+<!-- Plot **total amount of AuthenticityPhrases** of expensive against cheap chips -->
+
+<!-- ```{r echo=FALSE} -->
+<!-- toplot = df -->
+
+<!-- ggplot(toplot,aes(x=Price,y=AuthenticityPhrases)) + -->
+<!--   geom_point(color="#F9BA32") + -->
+<!--   geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) -->
+
+<!-- plot_AuthenticityPhrases = df %>% -->
+<!--                  select(PriceCategory,AuthenticityPhrases) %>% -->
+<!--                  group_by(PriceCategory) %>% -->
+<!--                  summarise(AvgAuthenticityPhrases = mean(AuthenticityPhrases), ci.low=ci.low(AuthenticityPhrases), ci.high=ci.high(AuthenticityPhrases)) -->
+<!-- plot_AuthenticityPhrases$YMin = plot_AuthenticityPhrases$AvgAuthenticityPhrases - plot_AuthenticityPhrases$ci.low -->
+<!-- plot_AuthenticityPhrases$YMax = plot_AuthenticityPhrases$AvgAuthenticityPhrases + plot_AuthenticityPhrases$ci.high -->
+
+<!-- ggplot(plot_AuthenticityPhrases,aes(x=PriceCategory,y=AvgAuthenticityPhrases)) + -->
+<!--   geom_col(fill="#F9BA32", width=.5) + -->
+<!--   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey") -->
+<!-- ``` -->
+
+<!-- Plot total amount of negative markers of expensive against cheap chips -->
+
+<!-- ```{r echo=FALSE} -->
+<!-- toplot = df -->
+
+<!-- ggplot(toplot,aes(x=Price,y=NegativeMarkers)) + -->
+<!--   geom_point(color="#2e4d5d") + -->
+<!--   geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) -->
+
+<!-- plot_totalNegMarkers = df %>% -->
+<!--                  select(PriceCategory,NegativeMarkers) %>% -->
+<!--                  group_by(PriceCategory) %>% -->
+<!--                  summarise(AvgNegativeMarkers = mean(NegativeMarkers), ci.low=ci.low(NegativeMarkers), ci.high=ci.high(NegativeMarkers)) -->
+<!-- plot_totalNegMarkers$YMin = plot_totalNegMarkers$AvgNegativeMarkers - plot_totalNegMarkers$ci.low -->
+<!-- plot_totalNegMarkers$YMax = plot_totalNegMarkers$AvgNegativeMarkers + plot_totalNegMarkers$ci.high -->
+
+<!-- ggplot(plot_totalNegMarkers,aes(x=PriceCategory,y=AvgNegativeMarkers)) + -->
+<!--   geom_col(fill="#2e4d5d", width=.5) + -->
+<!--   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey") -->
+<!-- ``` -->
+
+<!-- <!-- Plot relative amount of negative markers (amount of negative markers divided by total word count) of expensive against cheap chips -->
+
+<!-- ```{r echo=FALSE} -->
+<!-- # plot_relNegMarkers = df %>% -->
+<!-- #                  add_column(RelNegMarkers = df$NegativeMarkers/df$TotalWordCount) %>% -->
+<!-- #                  select(PriceCategory,RelNegMarkers) %>% -->
+<!-- #                  group_by(PriceCategory) %>% -->
+<!-- #                  summarise(AvgRelNegMarkers = mean(RelNegMarkers)) -->
+<!-- #  -->
+<!-- # ggplot(plot_relNegMarkers,aes(x=PriceCategory,y=AvgRelNegMarkers)) + -->
+<!-- #   geom_col() -->
+<!-- ``` -->
+
+<!-- Plot total amount of ComparativePhrases of expensive against cheap chips -->
+
+<!-- ```{r echo=FALSE} -->
+<!-- toplot = df -->
+
+<!-- ggplot(toplot,aes(x=Price,y=ComparativePhrases)) + -->
+<!--   geom_point(color="#a0b6c2") + -->
+<!--   geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) -->
+
+<!-- plot_ComparativePhrases = df %>% -->
+<!--                  select(PriceCategory,ComparativePhrases) %>% -->
+<!--                  group_by(PriceCategory) %>% -->
+<!--                  summarise(AvgComparativePhrases = mean(ComparativePhrases), ci.low=ci.low(ComparativePhrases), ci.high=ci.high(ComparativePhrases)) -->
+<!-- plot_ComparativePhrases$YMin = plot_ComparativePhrases$AvgComparativePhrases - plot_ComparativePhrases$ci.low -->
+<!-- plot_ComparativePhrases$YMax = plot_ComparativePhrases$AvgComparativePhrases + plot_ComparativePhrases$ci.high -->
+
+<!-- ggplot(plot_ComparativePhrases,aes(x=PriceCategory,y=AvgComparativePhrases)) + -->
+<!--   geom_col(fill="#a0b6c2", width=.5) + -->
+<!--   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey") -->
+<!-- ``` -->
+
+<!-- Plot total amount of NaturalnessPhrases of expensive against cheap chips -->
+
+<!-- ```{r echo=FALSE} -->
+<!-- toplot = df -->
+
+<!-- ggplot(toplot,aes(x=Price,y=NaturalnessPhrases)) + -->
+<!--   geom_point(color="#c79428") + -->
+<!--   geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) -->
+
+<!-- plot_NaturalnessPhrases = df %>% -->
+<!--                  select(PriceCategory,NaturalnessPhrases) %>% -->
+<!--                  group_by(PriceCategory) %>% -->
+<!--                  summarise(AvgNaturalnessPhrases = mean(NaturalnessPhrases), ci.low=ci.low(NaturalnessPhrases), ci.high=ci.high(NaturalnessPhrases)) -->
+<!-- plot_NaturalnessPhrases$YMin = plot_NaturalnessPhrases$AvgNaturalnessPhrases - plot_NaturalnessPhrases$ci.low -->
+<!-- plot_NaturalnessPhrases$YMax = plot_NaturalnessPhrases$AvgNaturalnessPhrases + plot_NaturalnessPhrases$ci.high -->
+
+<!-- ggplot(plot_NaturalnessPhrases,aes(x=PriceCategory,y=AvgNaturalnessPhrases)) + -->
+<!--   geom_col(fill="#c79428", width=.5) + -->
+<!--   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey") -->
+<!-- ``` -->
+
+<!-- Plot total amount of HistoricityPhrases of expensive against cheap chips -->
+
+<!-- ```{r echo=FALSE} -->
+<!-- toplot = df -->
+
+<!-- ggplot(toplot,aes(x=Price,y=HistoricityPhrases)) + -->
+<!--   geom_point(color="#fce3ad") + -->
+<!--   geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) -->
+
+<!-- plot_HistoricityPhrases = df %>% -->
+<!--                  select(PriceCategory,HistoricityPhrases) %>% -->
+<!--                  group_by(PriceCategory) %>% -->
+<!--                  summarise(AvgHistoricityPhrases = mean(HistoricityPhrases), ci.low=ci.low(HistoricityPhrases), ci.high=ci.high(HistoricityPhrases)) -->
+<!-- plot_HistoricityPhrases$YMin = plot_HistoricityPhrases$AvgHistoricityPhrases - plot_HistoricityPhrases$ci.low -->
+<!-- plot_HistoricityPhrases$YMax = plot_HistoricityPhrases$AvgHistoricityPhrases + plot_HistoricityPhrases$ci.high -->
+
+<!-- ggplot(plot_HistoricityPhrases,aes(x=PriceCategory,y=AvgHistoricityPhrases)) + -->
+<!--   geom_col(fill="#fce3ad", width=.5) + -->
+<!--   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey") -->
+<!-- ``` -->
+
+<!-- Plot total amount of IngredientPhrases of expensive against cheap chips -->
+
+<!-- ```{r echo=FALSE} -->
+<!-- toplot = df -->
+
+<!-- ggplot(toplot,aes(x=Price,y=IngredientPhrases)) + -->
+<!--   geom_point(color="#fac75a") + -->
+<!--   geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) -->
+
+<!-- plot_IngredientPhrases = df %>% -->
+<!--                  select(PriceCategory,IngredientPhrases) %>% -->
+<!--                  group_by(PriceCategory) %>% -->
+<!--                  summarise(AvgIngredientPhrases = mean(IngredientPhrases), ci.low=ci.low(IngredientPhrases), ci.high=ci.high(IngredientPhrases)) -->
+<!-- plot_IngredientPhrases$YMin = plot_IngredientPhrases$AvgIngredientPhrases - plot_IngredientPhrases$ci.low -->
+<!-- plot_IngredientPhrases$YMax = plot_IngredientPhrases$AvgIngredientPhrases + plot_IngredientPhrases$ci.high -->
+
+<!-- ggplot(plot_IngredientPhrases,aes(x=PriceCategory,y=AvgIngredientPhrases)) + -->
+<!--   geom_col(fill="#fac75a", width=.5) + -->
+<!--   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey") -->
+<!-- ``` -->
+
+<!-- Plot total amount of ProcessPhrases of expensive against cheap chips -->
+
+<!-- ```{r echo=FALSE} -->
+<!-- toplot = df -->
+
+<!-- ggplot(toplot,aes(x=Price,y=ProcessPhrases)) + -->
+<!--   geom_point(color="#634a14") + -->
+<!--   geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) -->
+
+<!-- plot_ProcessPhrases = df %>% -->
+<!--                  select(PriceCategory,ProcessPhrases) %>% -->
+<!--                  group_by(PriceCategory) %>% -->
+<!--                  summarise(AvgProcessPhrases = mean(ProcessPhrases), ci.low=ci.low(ProcessPhrases), ci.high=ci.high(ProcessPhrases)) -->
+<!-- plot_ProcessPhrases$YMin = plot_ProcessPhrases$AvgProcessPhrases - plot_ProcessPhrases$ci.low -->
+<!-- plot_ProcessPhrases$YMax = plot_ProcessPhrases$AvgProcessPhrases + plot_ProcessPhrases$ci.high -->
+
+<!-- ggplot(plot_ProcessPhrases,aes(x=PriceCategory,y=AvgProcessPhrases)) + -->
+<!--   geom_col(fill="#634a14", width=.5) + -->
+<!--   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey") -->
+<!-- ``` -->
+
+
+Plot **facetted total amount of different phrases**
+
+```{r echo=FALSE, fig.height=11, fig.width=14}
+plot_Phrases = df %>%
+               gather(HealthyPhrases,DistinctivePhrases,AuthenticityPhrases,LicensePhrases,key = "Phrases",value = "Occurrences") %>%
+               mutate(Product_name = reorder(Product_name,Price)) %>%
+               select(Product_name,Phrases,Occurrences)
+
+ggplot(plot_Phrases,aes(x=Phrases,y=Occurrences,fill=Phrases)) +
+  facet_wrap("Product_name") +
+  geom_col(position = position_dodge(), width = .5) +
+  theme(legend.position="top") +
+  theme(axis.ticks.x=element_blank(),axis.text.x = element_blank()) +
+  scale_fill_manual(values = c("#F9BA32","#426E86","#F8F1E5","#2F3131"),
+                    labels=c("Authenticity", "Distinctive", "Healthy", "License"))
+
+# ggsave("trial.png",width = 40,height = 30)
+```
+
+Plot **facetted relative amount of different Phrases**
+
+```{r echo=FALSE, fig.height=11, fig.width=14}
+relativePhrases = df %>%
+                  select(Product_name,Price,PricePer100g,HealthyPhrases,DistinctivePhrases,AuthenticityPhrases,LicensePhrases) %>%
+                  mutate_at(vars(-Product_name,-Price,-PricePer100g),funs(./df$TotalWordCount))
+
+plot_relPhrases = relativePhrases %>%
+               gather(HealthyPhrases,DistinctivePhrases,AuthenticityPhrases,LicensePhrases,key = "Phrases",value = "Occurrences") %>%
+               mutate(Product_name = reorder(Product_name,Price)) %>%
+               select(Product_name,Phrases,Occurrences)
+
+ggplot(plot_relPhrases,aes(x=Phrases,y=Occurrences,fill=Phrases)) +
+  facet_wrap("Product_name") +
+  geom_col(position = position_dodge(), width = .5) +
+  theme(legend.position="top") +
+  theme(axis.ticks.x=element_blank(),axis.text.x = element_blank()) +
+  scale_fill_manual(values = c("#F9BA32","#426E86","#F8F1E5","#2F3131"),
+                    labels=c("Authenticity", "Distinctive", "Healthy", "License"))
+```
 
 
