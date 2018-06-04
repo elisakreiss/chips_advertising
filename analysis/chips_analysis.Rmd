@@ -11,7 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## General remarks about the data
 
-I have collected 27 different chips bags from x stores. I considered each bag which contained "normal" chips, i.e., no riffled in any other way themed type. From those different kinds, I chose (what I considered as) the most basic flavor. Preferably, this was salt (*name chips bags*), but, if this wasn't available, bell pepper (*name chips bags*), salt and pepper (*name chips bags*), salt and vinegar (*name chips bags*) or chives and sour cream (*name chips bags*). The chips bags range from 110g to 200g. In contrast to the original study by Freedman and Jurafsky, I considered the front and the back side of the chips bags, since the content in the front was often very meaningful and non-neglectable. The text in the data includes all text on the bags (including repetitions and brand names) except for instructions how to store them, the obligatory list of ingredients, the table with nutritional values, the recommended portion size, the store brand (e.g., what Edeka would be for Gut & Günstig chips, or Rewe for ja! chips), contact information (e.g., address and phone number of the company), complaint information, surveys, recommendations for other products and trade-mark information. However, it is worth mentioning, that if the list of ingredients included a reference to biological farming or that the product is vegan or similar, this information was included. One last very important thing that was left out, was translations. Those were picked up in the analysis in the end, but are excluded in general since they don't contribute any new information and just address different audiences.
+I have collected 25 different chips bags from x stores. I considered each bag which contained "normal" chips, i.e., no riffled in any other way themed type. From those different kinds, I chose (what I considered as) the most basic flavor. Preferably, this was salt (*name chips bags*), but, if this wasn't available, bell pepper (*name chips bags*), salt and pepper (*name chips bags*), salt and vinegar (*name chips bags*) or chives and sour cream (*name chips bags*). The chips bags range from 110g to 200g. In contrast to the original study by Freedman and Jurafsky, I considered the front and the back side of the chips bags, since the content in the front was often very meaningful and non-neglectable. The text in the data includes all text on the bags (including repetitions and brand names) except for instructions how to store them, the obligatory list of ingredients, the table with nutritional values, the recommended portion size, the store brand (e.g., what Edeka would be for Gut & Günstig chips, or Rewe for ja! chips), contact information (e.g., address and phone number of the company), complaint information, surveys, recommendations for other products and trade-mark information. However, it is worth mentioning, that if the list of ingredients included a reference to biological farming or that the product is vegan or similar, this information was included. 
+There are two different data sets. One that doesn't and one that does include translations. The default data set doesn't contain any translations, since translations are not addressing one audience but several and therefore a high amount of mentioned ingredients is not due to an emphasis for a particular buyer, but due to the translation of one and the same passage. However, the amount of translations does affect/effect? the space available on the package for further advertisement and therefore the total word count.
 
 #### Current data frame (tibble) structure
 
@@ -59,7 +60,7 @@ df = basic_info
 # think about bags with less than 125g, since the bags are a lot smaller
 # think about Funny Chipsfrisch and Trafo, since they were on discount price
 # df = droplevels(df[!(df$Product_name=="KettleChips" | df$Product_name=="Tyrrells" | df$Product_name=="LentilChips" | df$Product_name=="HandCookedChips"),])
-df = droplevels(df[df$Weight>=125,])
+# df = droplevels(df[df$Weight>=125,])
 
 # for easier subsequent analysis, delete special characters from texts (think about dash again if necessary)
 df$Text = gsub(",|?|!|\\.","",df$Text) %>%
@@ -81,6 +82,13 @@ df$AverageWordLength = gsub(" |-","",df$Text) %>%
 # maybe add results for upper- and lowercase together for each word
 # can maximally take 12 items
 # ask_google = ngram(c("Schnecke","Chips"), corpus = "ger_2012", year_start = 1990, year_end = 2008, smoothing = 3, count = TRUE, tag = NULL)
+
+df_withTranslation = read_csv(here("texts","chips_data_withTranslations.csv"))
+df_withTranslation$Text = gsub(",|?|!|\\.","",df_withTranslation$Text) %>%
+                          str_to_lower()
+df_withTranslation$PriceCategory = ifelse(df_withTranslation$Price >= 1.5,"expensive","cheap")
+df_withTranslation$TotalWordCount = str_count(df_withTranslation$Text, boundary("word"))
+df_withTranslation$TranslatedWords = df_withTranslation$TotalWordCount - df$TotalWordCount
 ```
 
 ## Categorization
@@ -136,13 +144,15 @@ toplot = df
 
 ggplot(toplot,aes(x=Price,y=TotalWordCount,label=Product_name)) +
   geom_point(color="darkgreen") +
+  geom_smooth(method = "lm") +
   geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) +
   xlim(0,2.5)
 
 ggplot(toplot,aes(x=PricePer100g,y=TotalWordCount,label=Product_name)) +
   geom_point(color="darkgreen") +
+  geom_smooth(method = "lm") +
   geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) +
-  xlim(0,2.5)
+  xlim(0.3,2.25)
 
 plot_totalWordCount = df %>%
                  select(PriceCategory,TotalWordCount) %>%
@@ -156,13 +166,74 @@ ggplot(plot_totalWordCount,aes(x=PriceCategory,y=AvgTotalWordCount)) +
   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
 ```
 
+Plot **total word count with translations** against chips prices
+
+```{r echo=FALSE}
+toplot = df_withTranslation
+
+ggplot(toplot,aes(x=Price,y=TotalWordCount,label=Product_name)) +
+  geom_point(color="turquoise") +
+  geom_smooth(method = "lm") +
+  geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) +
+  xlim(0,2.5)
+
+ggplot(toplot,aes(x=PricePer100g,y=TotalWordCount,label=Product_name)) +
+  geom_point(color="turquoise") +
+  geom_smooth(method = "lm") +
+  geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) +
+  xlim(0.3,2.25)
+
+plot_totalWordCount = toplot %>%
+                 select(PriceCategory,TotalWordCount) %>%
+                 group_by(PriceCategory) %>%
+                 summarise(AvgTotalWordCount = mean(TotalWordCount), ci.low=ci.low(TotalWordCount), ci.high=ci.high(TotalWordCount))
+plot_totalWordCount$YMin = plot_totalWordCount$AvgTotalWordCount - plot_totalWordCount$ci.low
+plot_totalWordCount$YMax = plot_totalWordCount$AvgTotalWordCount + plot_totalWordCount$ci.high
+
+ggplot(plot_totalWordCount,aes(x=PriceCategory,y=AvgTotalWordCount)) +
+  geom_col(fill="turquoise", width=.5) +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
+```
+
+Plot **number of translated words** against chips prices
+(for every translated word, you pay x more)
+
+```{r echo=FALSE}
+toplot = df_withTranslation
+
+ggplot(toplot,aes(x=Price,y=TranslatedWords,label=Product_name)) +
+  geom_point(color="turquoise") +
+  geom_smooth(method = "lm") +
+  geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) +
+  xlim(0,2.5)
+
+ggplot(toplot,aes(x=PricePer100g,y=TranslatedWords,label=Product_name)) +
+  geom_point(color="turquoise") +
+  geom_smooth(method = "lm") +
+  geom_text(aes(label=Product_name),hjust=1, vjust=-0.5) +
+  xlim(0.3,2.25)
+
+plot_TranslatedWords = toplot %>%
+                 select(PriceCategory,TranslatedWords) %>%
+                 group_by(PriceCategory) %>%
+                 summarise(AvgTranslatedWords = mean(TranslatedWords), ci.low=ci.low(TranslatedWords), ci.high=ci.high(TranslatedWords))
+plot_TranslatedWords$YMin = plot_TranslatedWords$AvgTranslatedWords - plot_TranslatedWords$ci.low
+plot_TranslatedWords$YMax = plot_TranslatedWords$AvgTranslatedWords + plot_TranslatedWords$ci.high
+
+ggplot(plot_TranslatedWords,aes(x=PriceCategory,y=AvgTranslatedWords)) +
+  geom_col(fill="turquoise", width=.5) +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
+```
+
 Plot **average word length** of expensive against cheap chips
+(here, I should exclude all only-English chips bags)
 
 ```{r echo=FALSE}
 toplot = df
 
 ggplot(toplot,aes(x=Price,y=AverageWordLength)) +
   geom_point(color="lightgreen") +
+  geom_smooth(method = "lm") +
   geom_text(aes(label=Product_name),hjust=1, vjust=-0.5)
 
 plot_avgLength = df %>%
