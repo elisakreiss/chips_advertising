@@ -45,7 +45,7 @@ theme_set(theme_chips(18))
 <!-- Therefore, those chips bags will be included in the semantic analysis, but not in the analyses where length of sentences, length of words and word frequency is evaluated, since they are very language specific and could therefore skew the analysis. -->
 The other problem to face are the amount of translations. Some potato chips bags don't contain any translations at all (e.g., Lays, JedenTagChips), whereas others (e.g., DeRit) have various translations of their full advertisements resulting in less space for original advertisement. Since translations are so far not included in the transcribed texts, the German total word count doesn't reflect the overall total word count. <br>
 
-**Weight**: The weights of the bags range from 110g to 200g. In my opinion, it is reasonable to assume that the difference between 200g and 175g is neglectable, since the package size does not change a lot. This might still be true for 150g, but from that point on, the packaging becomes perceivably smaller. This means that the amount of space for text decreases and could therefore highly influence an analysis considering total instead of relative amounts. However, when we look at the data, we do not find a positive correlation between increased weight and total word count (rather on the contrary). Therefore, the package size does not seem to influence the total number of words for advertisement in a way that would justify excluding them from an analysis.
+**Weight**: The weights of the bags range from 110g to 200g. In my opinion, it is reasonable to assume that the difference between 200g and 175g is neglectable, since the package size does not change a lot. This might still be true for 150g, but from that point on, the packaging becomes perceivably smaller. This means that the amount of space for text decreases and could therefore highly influence an analysis considering total instead of relative amounts. However, when we look at the data, we do not find a positive correlation between increased weight and total word count (rather on the contrary). Therefore, the package size does not seem to influence the total number of words for advertisement in a way that would justify excluding them from an analysis. *it could have an influence though on the price focus... when there is no noticible difference in size, they might compare total prices but as soon as it's smaller, relative prices*
 
 ```{r WeightVsWordcount, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
 ggplot(df,aes(x=Weight,y=TotalWordCount)) +
@@ -57,12 +57,14 @@ ggplot(df,aes(x=Price,y=Weight)) +
   geom_smooth(method = "lm")
 ```
 
-Choosing a **price threshold**: The first decision to make is, whether to consider the price per 100g or the total price. I decided for the total price, because I believe that this is in the end what people base their decision on. However, it should be noted, that this decision only changes the categorization of one item. <br> <br>
-A tiny anecdote <br>
-*I spent quite some time in the last weeks in supermarkets, taking pictures of all the available potato chips bags. While I was sitting in front of one new shelf, a lady stood next to me and said after some time: "It's always so difficult to decide, right?" She held two potato chips bags in her hands, one being 20 cents cheaper than the other. By that time, I was already pretty familiar with the different kinds of potato chips available and pointed out that she should consider that not only is one of them 20 cents cheaper, but it additionally had 25g less of content. She looked it up, thanked me and said that she did not consider that before.* <br> <br>
-This is a great example to emphasize that the price per 100g is not the first thing people look at and personally it showed me, that I spent too much time with potato chips bags. <br>
+Choosing a **price threshold**: 
+*I can't find any research to this at all - what do people rather focus on when choosing a product: price (total price) or price per weight (relative price)? Can we do a quick MTurk study or short questionnaire session here?*
+<!-- The first decision to make is, whether to consider the price per 100g or the total price. I decided for the total price, because I believe that this is in the end what people base their decision on. However, it should be noted, that this decision only changes the categorization of one item. <br> <br> -->
+<!-- A tiny anecdote <br> -->
+<!-- *I spent quite some time in the last weeks in supermarkets, taking pictures of all the available potato chips bags. While I was sitting in front of one new shelf, a lady stood next to me and said after some time: "It's always so difficult to decide, right?" She held two potato chips bags in her hands, one being 20 cents cheaper than the other. By that time, I was already pretty familiar with the different kinds of potato chips available and pointed out that she should consider that not only is one of them 20 cents cheaper, but it additionally had 25g less of content. She looked it up, thanked me and said that she did not consider that before.* <br> <br> -->
+<!-- This is a great example to emphasize that the price per 100g is not the first thing people look at and personally it showed me, that I spent too much time with potato chips bags. <br> -->
 
-```{r LoadingData_BasicAnalysis, include=FALSE, message=FALSE, warning=FALSE}
+```{r LoadingData_BasicAnalysis, message=FALSE, warning=FALSE, include=FALSE}
 basic_info = read_csv(here("texts","chips_data.csv"))
 
 df = basic_info
@@ -86,18 +88,18 @@ df$TotalWordCount = str_count(df$Text_edited, boundary("word"))
 
 ## Connection educational level and socioeconomic status
 
-Education is one of the main indicators of socioeconomic status, together with income and occupation (cite: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1694190/, https://www.nap.edu/read/11036/chapter/6). Therefore, if the advertisement on potato chips bags reflects socioeconomic groups, we could expect that this is reflected in the language. Freedman and Jurafsky (2011) investigate this question by looking at sentence complexity, the total word count per chips bag and word frequency.
+Education is one of the main indicators of socioeconomic status, together with income and occupation (cite: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1694190/, https://www.nap.edu/read/11036/chapter/6). Therefore, if the advertisement on potato chips bags reflects socioeconomic groups, we could expect that this is reflected in the language. Freedman and Jurafsky (2011) investigate this question by looking at the **total word count** per chips bag, **sentence complexity** and **word frequency**.
 
 ### Total word count and the problem of translations
 
 A first intuitive measure to compare the language of advertisement on different potato chips bags is to count the total number of words used. The idea is that an increased number of words appeals more to an audience with a higher educational level. Indeed, Freedman and Jurafsky (2011) could show the tendency that the average word count increases with increasing price (104 words on average for inexpensive chips vs. 142 for expensive ones, resulting in a difference of 38 words).<br>
 Before collecting data, I assumed that this can be expected from German potato chips advertisement as well, since I could not foresee any difference in culture in that respect. In fact, we do see a tendency for more words on more expensive potato chips bags, but the difference was lower than I expected (47 words on average for inexpensive chips vs. 77 for expensive ones, resulting in a difference of 30 words).<br>
 When collecting the data for this study, I noticed one problem: What should I do with translations? Translations did not seem to be a problem when dealing with US-American products, but they turn out to be highly important when considering German potato chips advertisement. <br>
-For one, the amount of translations varys a lot between potato chips bags. Some bags do not have any translations and others have whole advertisement paragraphs phrased in up to four and ingredients in up to eleven languages. The amount of translations on a bag therefore highly influence how much space is left for additional advertisement. <br>
+For one, the amount of translations varys a lot between potato chips bags. Some bags do not have any translations and others have whole advertisement paragraphs phrased in up to four and ingredients in up to eleven languages. The amount of translations on a bag therefore highly influences how much space is left for additional advertisement. <br>
 However, this would not be important in this case, if the amount of translations was independent of the price. If the amount of translated words was evenly distributed over the whole price range, it would not have an effect on the difference of the total word count between cheap and expensive potato chips. But this is not what we see. We see that more expensive potato chips are a lot more likely to have translated advertisement than cheap ones, which is therefore relevant to consider when evaluating total word count. <br>
 When we now consider all words used for advertisement (original language and translations) and look at the difference between total word count again, we see that overall text increases remarkably with rising prices (50 words on average for inexpensive chips vs. 141 for expensive ones, resulting in a difference of 91 words).
 
-```{r Plot_WordCountTransl, echo=FALSE, fig.width = 13, fig.height = 6}
+```{r Plot_WordCountTransl, echo=FALSE, fig.height=6, fig.width=13, message=FALSE, warning=FALSE}
 
 df_withTranslation = read_csv(here("texts","chips_data_withTranslations.csv"))
 df_withTranslation$Text = gsub(",|?|!|\\.","",df_withTranslation$Text) %>%
@@ -157,52 +159,10 @@ binaryPlot = ggplot(plot_totalWordCount_all,aes(x=PriceCategory,y=AvgTotalWordCo
 grid.arrange(scatterPlot,binaryPlot,ncol=2)
 ```
 
-```{r Plot_TranslatedWords, echo=FALSE, fig.width = 13, fig.height = 5}
-
-plot_TranslatedWords = df_withTranslation %>%
-  select(PriceCategory,TranslatedWords) %>%
-  group_by(PriceCategory) %>%
-  summarise(AvgTranslatedWords = mean(TranslatedWords), ci.low=ci.low(TranslatedWords), ci.high=ci.high(TranslatedWords)) %>%
-  add_column(YMin=.$AvgTranslatedWords-.$ci.low)  %>%
-  add_column(YMax=.$AvgTranslatedWords+.$ci.high)
-
-binaryPlot = ggplot(plot_TranslatedWords,aes(x=PriceCategory,y=AvgTranslatedWords)) +
-  geom_col(fill="#694d80", width=.5) +
-  xlab("Price") +
-  ylab("Number of Translated Words") +
-  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="darkgrey")
-
-binaryPlot1 = ggplot(df_withTranslation,aes(x=TranslatedWords_centered,y=Price_centered)) +
-  geom_point() +
-  geom_smooth(method="lm")
-
-binaryPlot2 = ggplot(df_withTranslation,aes(x=Price_centered,y=TranslatedWords_centered)) +
-  geom_point() +
-  geom_smooth(method="lm")
-
-
-grid.arrange(binaryPlot1,binaryPlot2,ncol=2)
-```
-
-```{r}
-
-df_withTranslation$TranslatedWords_centered = df_withTranslation$TranslatedWords - mean(df_withTranslation$TranslatedWords)
-df_withTranslation$Price_centered = df_withTranslation$Price - mean(df_withTranslation$Price)
-df_withTranslation$TotalWordCount_centered = df_withTranslation$TotalWordCount - mean(df_withTranslation$TotalWordCount)
-
-cor(df_withTranslation$TranslatedWords, df_withTranslation$Price)
-model = lm(TranslatedWords_centered ~ Price_centered, data=df_withTranslation)
-# model = lm(Price_centered ~ TranslatedWords_centered, data=df_withTranslation)
-summary(model)
-
-cor(df_withTranslation$Price, df_withTranslation$TotalWordCount)
-model = lm(TotalWordCount ~ Price, data=df_withTranslation)
-summary(model)
-```
-
-### Average word length
+### Sentence Complexity (*This whole chapter needs extensive work!*)
+##### Average word length
 In a lot of languages, it is reasonable to assume that longer words address a more educated audience than shorter ones. Freedman and Jurafsky (2011) found this effect in potato chips advertisement as well. More expensive potato chips had an increased average word length compared to cheap ones. In German, we don't find this at all. <br>
-Why could that be the case? German is a language that lives of compunding. The English "bell pepper flavour" becomes "Paprikageschmack", which is not more difficult to comprehend or in generell less frequently used than non-compunded structures. In German, we rather find a contrary movement, which is that splitting up a compound in a more complex syntactical structure is more considered a sign of intellect than using those long compounds. (*elaborate here, cite someone*)
+Why could that be the case? German is a language that lives of compunding. The English "bell pepper flavour" becomes "Paprikageschmack", which is not more difficult to comprehend or in general less frequently used than non-compunded structures. In German, we rather find a contrary movement, which is that splitting up a compound in a more complex syntactical structure is more considered a sign of intellect than using those long compounds. (*elaborate here, cite someone*)
 
 ```{r Plot_AvgWordLength, echo=FALSE, fig.width = 13, fig.height = 5}
 
@@ -231,10 +191,110 @@ binaryPlot = ggplot(toplot,aes(x=PriceCategory,y=AvgAverageWordLength_nostopword
 grid.arrange(binaryPlot,ncol=2)
 ```
 
+##### Sentence Length Analysis
+Thoughts: <br>
+- hypothesis (from Freedman & Jurafsky): "more expensive chips would be packaged in more expensive language" <br>
+- their chosen measure: Flesch-Kincaid readability test = weighted value of the length of each sentence in the text (longer sentences tend to be more complex) and the length of each word in the text in syllables (longer words tend to be harder to read) *can I get Coleman-Liau readability test results? Do I need them* <br>
+- since syllable extraction is rather difficult (in German), look at Coleman-Liau readability test results <br>
+- CLR results for expensive and inexpensive chips are very similar <br>
+- looking at components: CLR_L (letters per 100 words) is basically identical; CLR_S (sentences per 100 words) shows clear distinction <br>
+- we have already analyzed above why letters per word is a difficult measure in German since compound nouns are not necessarily that much more difficult to comprehend (*cite*) (this would also be a problem for the syllables case); looking at the values, CLR_L is generally much bigger than CLR_S which is why the higher "weight" causes the final distribution to look more like CLR_L <br>
+- therefore this analysis is not really informative <br>
+- maybe look at naive approach then: only considering sentence length (number of words/number of sentences) for each bag <br>
+- what we see: slight tendency for longer sentences, but nothing remarkable <br>
+
+```{r Plot_AvgSentenceLength, echo=FALSE, fig.height=5, fig.width=13, message=FALSE, warning=FALSE}
+
+toplot = df %>%
+  # take only chips bags with mainly German advertisement
+  filter(EnglishOnly == FALSE) %>% 
+  # all sentences are separated by .
+  mutate(Text_dot = str_replace_all(Text,"!",".")) %>% 
+  # average sentence length = number of words/number of sentences
+  mutate(AvgSentenceLength = TotalWordCount/str_count(Text_dot,"\\."))
+  # mutate(AvgSentenceLength = str_length(Text_dot)/str_count(Text_dot,"\\."))
+  
+plot_avgSentence_Words = toplot %>%
+  select(PriceCategory,AvgSentenceLength) %>%
+  group_by(PriceCategory) %>%
+  summarise(BinnedAvgSentenceLength = mean(AvgSentenceLength), ci.low=ci.low(AvgSentenceLength), ci.high=ci.high(AvgSentenceLength)) %>%
+  add_column(YMin=.$BinnedAvgSentenceLength-.$ci.low)  %>%
+  add_column(YMax=.$BinnedAvgSentenceLength+.$ci.high)
+
+binaryPlot_words = ggplot(plot_avgSentence_Words,aes(x=PriceCategory,y=BinnedAvgSentenceLength)) +
+  geom_col(fill="#4D8069", width=.5) +
+  xlab("Price") +
+  ylab("Average Sentence Length") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
+
+grid.arrange(binaryPlot_words,ncol=2)
+```
+
+```{r CLR, eval=FALSE, include=FALSE}
+###
+# Coleman-Liau readability test
+###
+
+# L = average number of letters per 100 words and;
+# S = average number of sentences per 100 words.
+# 0.0588L – 0.296S – 15.8
+
+df_clr = toplot %>% 
+  mutate(CLR_L=(100*str_length(Text_dot))/(str_count(Text_dot,boundary("word")))) %>% 
+  mutate(CLR_S=(100*str_count(Text_dot,"\\."))/(str_count(Text_dot,boundary("word")))) %>% 
+  mutate(CLR=(0.0588*CLR_L-0.296*CLR_S-15.8))
+
+plot_CLR = df_clr %>%
+  select(PriceCategory,CLR) %>%
+  group_by(PriceCategory) %>%
+  summarise(AvgCLR = mean(CLR), ci.low=ci.low(CLR), ci.high=ci.high(CLR)) %>%
+  add_column(YMin=.$AvgCLR-.$ci.low)  %>%
+  add_column(YMax=.$AvgCLR+.$ci.high)
+
+binaryPlot_CLR = ggplot(plot_CLR,aes(x=PriceCategory,y=AvgCLR)) +
+  geom_col(fill="#4D8069", width=.5) +
+  xlab("Price") +
+  ylab("Average Sentence Length (CLR)") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
+
+plot_CLR_L = df_clr %>%
+  select(PriceCategory,CLR_L) %>%
+  group_by(PriceCategory) %>%
+  summarise(AvgCLR_L = mean(CLR_L), ci.low=ci.low(CLR_L), ci.high=ci.high(CLR_L)) %>%
+  add_column(YMin=.$AvgCLR_L-.$ci.low)  %>%
+  add_column(YMax=.$AvgCLR_L+.$ci.high)
+
+binaryPlot_CLR_L = ggplot(plot_CLR_L,aes(x=PriceCategory,y=AvgCLR_L)) +
+  geom_col(fill="#4D8069", width=.5) +
+  xlab("Price") +
+  ylab("Average Number of Letters per 100 Words (CLR_L)") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
+
+plot_CLR_S = df_clr %>%
+  select(PriceCategory,CLR_S) %>%
+  group_by(PriceCategory) %>%
+  summarise(AvgCLR_S = mean(CLR_S), ci.low=ci.low(CLR_S), ci.high=ci.high(CLR_S)) %>%
+  add_column(YMin=.$AvgCLR_S-.$ci.low)  %>%
+  add_column(YMax=.$AvgCLR_S+.$ci.high)
+
+binaryPlot_CLR_S = ggplot(plot_CLR_S,aes(x=PriceCategory,y=AvgCLR_S)) +
+  geom_col(fill="#4D8069", width=.5) +
+  xlab("Price") +
+  ylab("Average Number of Sentences per 100 Words (CLR_S)") +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
+
+grid.arrange(binaryPlot_words,binaryPlot_CLR,binaryPlot_CLR_L,binaryPlot_CLR_S,ncol=2)
+```
+
+
 ### Word Frequency Analysis
-Kartoffel: frequent
-Sorte: frequent
-Kartoffelsorte: infrequent
+Kartoffel: frequent <br>
+Chips: frequent <br>
+Kartoffelchips: infrequent <br>
+<br>
+potato: frequent <br>
+chips: frequent <br>
+potato chips: frequent + frequent <br>
 
 ```{r Plot_AvgWordFrequency, echo=FALSE, fig.height=5, fig.width=13, message=FALSE, warning=FALSE}
 
@@ -258,56 +318,6 @@ binaryPlot = ggplot(toplot,aes(x=PriceCategory,y=AvgAvgWordFreq)) +
   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
 
 grid.arrange(binaryPlot,ncol=2)
-```
-
-### Sentence Length Analysis
-- add sentence complexity/length measure (Flesch-Kincaid readability test: weighted value of the length of each sentence in the text (longer sentences tend to be more complex) and the length of each word in the text in syllables (longer words tend to be harder to read): the lower the metric, the more complex the language): WHY NOT POSSIBLE?
-
-```{r Plot_AvgSentenceLength, echo=FALSE, fig.height=5, fig.width=13, message=FALSE, warning=FALSE}
-# average sentence length
-df$Text_punct = str_replace_all(df$Text,"!",".")
-
-get_avgsentlen <- function(Text,bound){
-  lapply(Text, function(t){
-    splitted = unlist(strsplit(t, "(?<=\\.)", perl = T))
-    vals_per_sentence = str_count(splitted,bound)
-    avg_sentence_length_chars = sum(vals_per_sentence)/length(vals_per_sentence)
-  })
-}
-
-df$AvgSentenceLength_Words = unlist(get_avgsentlen(df$Text_punct,boundary("word")))
-# df$AvgSentenceLength_Chars = unlist(get_avgsentlen(df$Text_punct,"."))
-
-toplot = df
-
-plot_avgSentence_Words = toplot %>%
-  select(PriceCategory,AvgSentenceLength_Words) %>%
-  group_by(PriceCategory) %>%
-  summarise(AvgAvgSentenceLength_Words = mean(AvgSentenceLength_Words), ci.low=ci.low(AvgSentenceLength_Words), ci.high=ci.high(AvgSentenceLength_Words)) %>%
-  add_column(YMin=.$AvgAvgSentenceLength_Words-.$ci.low)  %>%
-  add_column(YMax=.$AvgAvgSentenceLength_Words+.$ci.high)
-
-# plot_avgSentence_Chars = toplot %>%
-#   select(PriceCategory,AvgSentenceLength_Chars) %>%
-#   group_by(PriceCategory) %>%
-#   summarise(AvgAvgSentenceLength_Chars = mean(AvgSentenceLength_Chars), ci.low=ci.low(AvgSentenceLength_Chars), ci.high=ci.high(AvgSentenceLength_Chars)) %>%
-#   add_column(YMin=.$AvgAvgSentenceLength_Chars-.$ci.low)  %>%
-#   add_column(YMax=.$AvgAvgSentenceLength_Chars+.$ci.high)
-
-binaryPlot_words = ggplot(plot_avgSentence_Words,aes(x=PriceCategory,y=AvgAvgSentenceLength_Words)) +
-  geom_col(fill="#4D8069", width=.5) +
-  xlab("Price") +
-  ylab("Average Sentence Length") +
-  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
-
-# binaryPlot_chars = ggplot(plot_avgSentence_Chars,aes(x=PriceCategory,y=AvgAvgSentenceLength_Chars)) +
-#   geom_col(fill="#4D8069", width=.5) +
-#   xlab("Price") +
-#   ylab("Average Sentence Length") +
-#   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="grey")
-
-grid.arrange(binaryPlot_words,ncol=2)
-# grid.arrange(binaryPlot_words,binaryPlot_chars,ncol=2)
 ```
 
 ## Semantic Analysis (find better title)
@@ -367,7 +377,7 @@ There are two ways of comparing the amount of these phrases of interest in cheap
 
 <!-- Plot Authenticity, Distinctive, Health Phrases (no differences to relative) -->
 
-```{r PhrasePlotGrid, echo=FALSE, fig.height=5, fig.width=15}
+```{r PhrasePlotGrid, eval=FALSE, fig.height=5, fig.width=15, include=FALSE}
 
 plot_HealthPhrases = df %>%
   select(PriceCategory,HealthPhrases) %>%
@@ -417,8 +427,7 @@ AP_plot = ggplot(plot_AuthenticityPhrases,aes(x=PriceCategory,y=AvgAuthenticityP
 grid.arrange(HP_plot,DP_plot,AP_plot,ncol=3)
 ```
 
-
-```{r Plot_TotalPhrases, echo=FALSE, fig.width = 13, fig.height = 6}
+```{r Plot_TotalPhrases, echo=FALSE, fig.height=5, fig.width=13, message=FALSE, warning=FALSE}
 # no difference to relative
 plot_Phrases = df %>%
   gather(HealthPhrases,DistinctivePhrases,AuthenticityPhrases,key = "Phrases",value = "Occurrences") %>%
@@ -445,24 +454,28 @@ plot_total = ggplot(plot_Phrases,aes(x=PriceCategory,y=AvgOccurrences,fill=Phras
 grid.arrange(plot_total,ncol=2)
 ```
 
-Plot HealthPhrase
+Plot Phrases against Price
 
-```{r}
-# ggplot(df,aes(x=Price,y=HealthPhrases))+
-#   # geom_point(aes(color=PriceCategory)) +
-#   geom_point(aes(color=PriceCategory)) +
-#   scale_fill_manual(values = c("yellow","green")) +
-#   geom_smooth(method="lm",color="#66c2a5")
-# 
-# ggplot(df,aes(x=Price,y=DistinctivePhrases))+
-#   geom_point(color="#fc8d62") +
-#   geom_smooth(method="lm",color="#fc8d62")
+```{r Plot_PhrasesPrice, echo=FALSE, fig.height=5, fig.width=13, message=FALSE, warning=FALSE}
+HeP_P = ggplot(df,aes(x=Price,y=HealthPhrases,color=PriceCategory))+
+  geom_point() +
+  scale_color_manual(values=c("#84ceb7", "#519b84")) +
+  theme(legend.position="none") +
+  geom_smooth(method="lm",color="#66c2a5",aes(x=Price,y=HealthPhrases))
 
-ggplot(df,aes(x=Price,y=AuthenticityPhrases,color=PriceCategory))+
+DiP_P = ggplot(df,aes(x=Price,y=DistinctivePhrases,color=PriceCategory))+
+  geom_point() +
+  scale_color_manual(values=c("#fca381", "#c9704e")) +
+  theme(legend.position="none") +
+  geom_smooth(method="lm",color="#fc8d62",aes(x=Price,y=DistinctivePhrases))
+
+AP_P = ggplot(df,aes(x=Price,y=AuthenticityPhrases,color=PriceCategory))+
   geom_point() +
   scale_color_manual(values=c("#afbcda", "#62708e")) +
   theme(legend.position="none") +
   geom_smooth(method="lm",color="#8da0cb",aes(x=Price,y=AuthenticityPhrases))
+
+grid.arrange(HeP_P,DiP_P,AP_P,ncol=3)
 ```
 
 
@@ -616,4 +629,54 @@ wordcloud(words = d_cheap$word, freq = d_cheap$freq, min.freq = 3, scale=c(2,.2)
           max.words=200, random.order=FALSE, rot.per=0.35, 
           colors=brewer.pal(8, "Dark2"))
 ```
+
+```{r}
+
+# df_withTranslation$TranslatedWords_centered = df_withTranslation$TranslatedWords - mean(df_withTranslation$TranslatedWords)
+# df_withTranslation$Price_centered = df_withTranslation$Price - mean(df_withTranslation$Price)
+# df_withTranslation$TotalWordCount_centered = df_withTranslation$TotalWordCount - mean(df_withTranslation$TotalWordCount)
+# 
+# cor(df_withTranslation$TranslatedWords, df_withTranslation$Price)
+# model = lm(TranslatedWords_centered ~ Price_centered, data=df_withTranslation)
+# # model = lm(Price_centered ~ TranslatedWords_centered, data=df_withTranslation)
+# summary(model)
+# 
+# cor(df_withTranslation$Price, df_withTranslation$TotalWordCount)
+# model = lm(TotalWordCount ~ Price, data=df_withTranslation)
+# summary(model)
+```
+
+```{r Plot_TranslatedWords, echo=FALSE, fig.width = 13, fig.height = 5}
+
+# plot_TranslatedWords = df_withTranslation %>%
+#   select(PriceCategory,TranslatedWords) %>%
+#   group_by(PriceCategory) %>%
+#   summarise(AvgTranslatedWords = mean(TranslatedWords), ci.low=ci.low(TranslatedWords), ci.high=ci.high(TranslatedWords)) %>%
+#   add_column(YMin=.$AvgTranslatedWords-.$ci.low)  %>%
+#   add_column(YMax=.$AvgTranslatedWords+.$ci.high)
+# 
+# binaryPlot = ggplot(plot_TranslatedWords,aes(x=PriceCategory,y=AvgTranslatedWords)) +
+#   geom_col(fill="#694d80", width=.5) +
+#   xlab("Price") +
+#   ylab("Number of Translated Words") +
+#   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.25,color="darkgrey")
+# 
+# binaryPlot1 = ggplot(df_withTranslation,aes(x=TranslatedWords_centered,y=Price_centered)) +
+#   geom_point() +
+#   geom_smooth(method="lm")
+# 
+# binaryPlot2 = ggplot(df_withTranslation,aes(x=Price_centered,y=TranslatedWords_centered)) +
+#   geom_point() +
+#   geom_smooth(method="lm")
+# 
+# 
+# grid.arrange(binaryPlot1,binaryPlot2,ncol=2)
+```
+
+
+
+
+
+
+
 

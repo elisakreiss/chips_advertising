@@ -23,7 +23,7 @@ add_word <- function(word_freq, freq, Product){
   return(word_freq)
 }
 
-myFunction <- function(Text,Product){
+extract_freqs <- function(Text,Product){
   split = str_split(Text,boundary("word"))
   for (words_vector in split) {
     for (word in words_vector) {
@@ -38,32 +38,32 @@ myFunction <- function(Text,Product){
   }
 }
 
-# df$MeanFreq = myFunction(df$Text)
-myFunction(df[df$Product_name=='Naturals',]$Text,"Naturals")
-myFunction(df[df$Product_name=='Dorfchips',]$Text,"Dorfchips")
-myFunction(df[df$Product_name=='Küstengold',]$Text,"Küstengold")
-myFunction(df[df$Product_name=='HofChips',]$Text,"HofChips")
-myFunction(df[df$Product_name=='Lays',]$Text,"Lays")
-myFunction(df[df$Product_name=='KrosseKerle',]$Text,"KrosseKerle")
-myFunction(df[df$Product_name=='Chipsfrisch',]$Text,"Chipsfrisch")
-myFunction(df[df$Product_name=='Crunchips',]$Text,"Crunchips")
-# myFunction(df[df$Product_name=='KettleChips',]$Text)
-myFunction(df[df$Product_name=='JedenTagChips',]$Text,"JedenTagChips")
-myFunction(df[df$Product_name=='ClarkysKesselChips',]$Text,"ClarkysKesselChips")
-myFunction(df[df$Product_name=='CrustiCroc',]$Text,"CrustiCroc")
-myFunction(df[df$Product_name=='FeurichGourmet',]$Text,"FeurichGourmet")
-myFunction(df[df$Product_name=='Trafo',]$Text,"Trafo")
-# myFunction(df[df$Product_name=='HandCookedChips',]$Text)
-myFunction(df[df$Product_name=='DeRit',]$Text,"DeRit")
-myFunction(df[df$Product_name=='FeurichChips',]$Text,"FeurichChips")
-# myFunction(df[df$Product_name=='Tyrrells',]$Text)
-myFunction(df[df$Product_name=='JA',]$Text,"JA")
-myFunction(df[df$Product_name=='Chio',]$Text,"Chio")
-myFunction(df[df$Product_name=='WorldOfChips',]$Text,"WorldOfChips")
-myFunction(df[df$Product_name=='Classic',]$Text,"Classic")
-myFunction(df[df$Product_name=='Lisas',]$Text,"Lisas")
-myFunction(df[df$Product_name=='GutUndGünstigChips',]$Text,"GutUndGünstigChips")
-myFunction(df[df$Product_name=='GutUndGünstigKessel',]$Text,"GutUndGünstigKessel")
+# df$MeanFreq = extract_freqs(df$Text)
+extract_freqs(df[df$Product_name=='Naturals',]$Text,"Naturals")
+extract_freqs(df[df$Product_name=='Dorfchips',]$Text,"Dorfchips")
+extract_freqs(df[df$Product_name=='Küstengold',]$Text,"Küstengold")
+extract_freqs(df[df$Product_name=='HofChips',]$Text,"HofChips")
+extract_freqs(df[df$Product_name=='Lays',]$Text,"Lays")
+extract_freqs(df[df$Product_name=='KrosseKerle',]$Text,"KrosseKerle")
+extract_freqs(df[df$Product_name=='Chipsfrisch',]$Text,"Chipsfrisch")
+extract_freqs(df[df$Product_name=='Crunchips',]$Text,"Crunchips")
+# extract_freqs(df[df$Product_name=='KettleChips',]$Text)
+extract_freqs(df[df$Product_name=='JedenTagChips',]$Text,"JedenTagChips")
+extract_freqs(df[df$Product_name=='ClarkysKesselChips',]$Text,"ClarkysKesselChips")
+extract_freqs(df[df$Product_name=='CrustiCroc',]$Text,"CrustiCroc")
+extract_freqs(df[df$Product_name=='FeurichGourmet',]$Text,"FeurichGourmet")
+extract_freqs(df[df$Product_name=='Trafo',]$Text,"Trafo")
+# extract_freqs(df[df$Product_name=='HandCookedChips',]$Text)
+extract_freqs(df[df$Product_name=='DeRit',]$Text,"DeRit")
+extract_freqs(df[df$Product_name=='FeurichChips',]$Text,"FeurichChips")
+# extract_freqs(df[df$Product_name=='Tyrrells',]$Text)
+extract_freqs(df[df$Product_name=='JA',]$Text,"JA")
+extract_freqs(df[df$Product_name=='Chio',]$Text,"Chio")
+extract_freqs(df[df$Product_name=='WorldOfChips',]$Text,"WorldOfChips")
+extract_freqs(df[df$Product_name=='Classic',]$Text,"Classic")
+extract_freqs(df[df$Product_name=='Lisas',]$Text,"Lisas")
+extract_freqs(df[df$Product_name=='GutUndGünstigChips',]$Text,"GutUndGünstigChips")
+extract_freqs(df[df$Product_name=='GutUndGünstigKessel',]$Text,"GutUndGünstigKessel")
 
 
 ###
@@ -94,6 +94,7 @@ Trafo = read_csv(here("analysis","frequencies","no_stopwords","Trafo.csv"))
 WorldOfChips = read_csv(here("analysis","frequencies","no_stopwords","WorldOfChips.csv"))
 
 df_no_stopwords = bind_rows(Chio,Chipsfrisch,ClarkysKesselChips,Classic,Crunchips,CrustiCroc,DeRit,Dorfchips,FeurichChips,FeurichGourmet,GutUndGünstigChips,GutUndGünstigKessel,HofChips,JA,JedenTagChips,KrosseKerle,Küstengold,Lays,Lisas,Naturals,Trafo,WorldOfChips)
+
 no_stopwords_freq = df_no_stopwords %>%
   select(-Word) %>%
   group_by(Product_ID) %>%
@@ -114,27 +115,11 @@ ggplot(df_no_stopwords,aes(x=Word,y=MeanFreq)) +
   geom_text(aes(label=Word),hjust=1, vjust=-0.5) +
   ylim(0,0.0000000537)
 
+df_no_stopwords$Length = str_length(df_no_stopwords$Word)
 
-string <- "Thisü is a very long character vector. Why is it so long! I think is short for long. I want to split this vector into senteces by using strssplit. Can someone help me! That would be nice."
-string = str_replace_all(string,"!",".")
-
-splitted = unlist(strsplit(string, "(?<=\\.)", perl = T))
-words_per_sentence = str_count(splitted, boundary("word"))
-avg_sentence_length_chars = sum(words_per_sentence)/length(words_per_sentence)
-
-
-
-chars_per_sentence = str_count(splitted, ".")
-avg_sentence_length_chars = sum(chars_per_sentence)/length(chars_per_sentence)
-
-
-
-
-
-
-unlist(strsplit(string, "(?<=\\.)", perl = T))
-
-
-unlist(str_count(string, boundary("sentence")))
-
+ggplot(df_no_stopwords,aes(x=Length,y=MeanFreq)) +
+  geom_point() +
+  # facet_wrap(~ Product_ID) +
+  geom_text(aes(label=Word),hjust=1, vjust=-0.5) +
+  ylim(0,0.0000000537)
        
