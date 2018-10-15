@@ -1,11 +1,13 @@
 Problems about categorization
 
+- should everything only belong to one category or are multiple categorizations possible?
+
 - naturalness vs health phrases:
-	- ohne Geschmacksverstärker, glutenfrei, ohne Hefeextrakt, ohne Konservierungsstoffe, vegetariergeeignet, no added sugar, frisch, 
+	- ohne Geschmacksverstärker, glutenfrei, ohne Hefeextrakt (yeast extract), ohne Konservierungsstoffe (preservatives), vegetariergeeignet, no added sugar, frisch
 - preparation vs naturalness (vs genuity)
 	- hand cooked
 - unique vs comparative
-	- nr 1, premium, less fat, feinste, funny-frische knusprigkeit, finest, less, longer fried than regular chips, more, most, signature crunch, thicker, unique, außergewöhnlich, besonder, beste, einzigartig, erstklassig, extra, größte, höchste, perfekt, speziell, unvergleichlich, unverwechselbar
+	- nr 1, premium, feinste, funny-frische knusprigkeit, finest, less, longer fried than regular chips, more, most, signature crunch, thicker, unique, außergewöhnlich, besonder, beste, einzigartig, erstklassig, extra, größte, höchste, perfekt, speziell, unvergleichlich, unverwechselbar
 
 - ingredient
 	- glutenfrei, vegetariergeeignet
@@ -18,4 +20,4 @@ Problems about categorization
 - do something with quality phrases?
 
 
-- ausgesucht, ausgewählt, erlesen
+- ausgesucht (chosen), ausgewählt (selected), erlesen (something like "distinguished")

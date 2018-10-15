@@ -95,11 +95,11 @@ Education is one of the main indicators of socioeconomic status, together with i
 A first intuitive measure to compare the language of advertisement on different potato chips bags is to count the total number of words used. The idea is that an increased number of words appeals more to an audience with a higher educational level. Indeed, Freedman and Jurafsky (2011) could show the tendency that the average word count increases with increasing price (104 words on average for inexpensive chips vs. 142 for expensive ones, resulting in a difference of 38 words).<br>
 Before collecting data, I assumed that this can be expected from German potato chips advertisement as well, since I could not foresee any difference in culture in that respect. In fact, we do see a tendency for more words on more expensive potato chips bags, but the difference was lower than I expected (47 words on average for inexpensive chips vs. 77 for expensive ones, resulting in a difference of 30 words).<br>
 When collecting the data for this study, I noticed one problem: What should I do with translations? Translations did not seem to be a problem when dealing with US-American products, but they turn out to be highly important when considering German potato chips advertisement. <br>
-For one, the amount of translations varys a lot between potato chips bags. Some bags do not have any translations and others have whole advertisement paragraphs phrased in up to four and ingredients in up to eleven languages. The amount of translations on a bag therefore highly influences how much space is left for additional advertisement. <br>
+For one, the amount of translations varies a lot between potato chips bags. Some bags do not have any translations and others have whole advertisement paragraphs phrased in up to four and ingredients in up to eleven languages. The amount of translations on a bag therefore highly influences how much space is left for additional advertisement. <br>
 However, this would not be important in this case, if the amount of translations was independent of the price. If the amount of translated words was evenly distributed over the whole price range, it would not have an effect on the difference of the total word count between cheap and expensive potato chips. But this is not what we see. We see that more expensive potato chips are a lot more likely to have translated advertisement than cheap ones, which is therefore relevant to consider when evaluating total word count. <br>
 When we now consider all words used for advertisement (original language and translations) and look at the difference between total word count again, we see that overall text increases remarkably with rising prices (50 words on average for inexpensive chips vs. 141 for expensive ones, resulting in a difference of 91 words).
 
-```{r Plot_WordCountTransl, echo=FALSE, fig.height=6, fig.width=13, message=FALSE, warning=FALSE}
+```{r Plot_WordCountTransl, echo=FALSE, fig.height=12, fig.width=13, message=FALSE, warning=FALSE}
 
 df_withTranslation = read_csv(here("texts","chips_data_withTranslations.csv"))
 df_withTranslation$Text = gsub(",|?|!|\\.","",df_withTranslation$Text) %>%
@@ -156,7 +156,32 @@ binaryPlot = ggplot(plot_totalWordCount_all,aes(x=PriceCategory,y=AvgTotalWordCo
                     labels=c("Without", "With")) +
   geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.2,color="grey",position = position_dodge(width=.5))
 
-grid.arrange(scatterPlot,binaryPlot,ncol=2)
+# plot translations only
+plot_translatedWordCount = toplotTL %>%
+  select(PriceCategory,TranslatedWords) %>%
+  group_by(PriceCategory) %>%
+  summarise(AvgTranslatedWords = mean(TranslatedWords), ci.low=ci.low(TranslatedWords), ci.high=ci.high(TranslatedWords)) %>%
+  add_column(TL=TRUE) %>%
+  add_column(YMin=.$AvgTranslatedWords-.$ci.low)  %>%
+  add_column(YMax=.$AvgTranslatedWords+.$ci.high)
+
+translation_plot_bar = ggplot(plot_translatedWordCount,aes(x=PriceCategory,y=AvgTranslatedWords,fill=TL)) +
+  geom_col(position = position_dodge(), width = .5) +
+  xlab("Price") +
+  ylab("Number of Words") +
+  theme(legend.position="top") +
+  scale_fill_manual(name="Translations",
+                    values = c("#6fb76f","#b76fb7"),
+                    labels=c("Without", "With")) +
+  geom_errorbar(aes(ymin=YMin,ymax=YMax),width=.2,color="grey",position = position_dodge(width=.5))
+
+translation_plot_scatter = ggplot(toplotTL,aes(x=Price,y=TranslatedWords)) +
+  geom_point() +
+  geom_smooth(method = "lm", color="#6fb76f") +
+  xlab("Price") +
+  ylab("Number of Translated Words")
+
+grid.arrange(scatterPlot,binaryPlot,translation_plot_scatter,translation_plot_bar,ncol=2)
 ```
 
 ### Sentence Complexity

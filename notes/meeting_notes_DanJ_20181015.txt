@@ -1,0 +1,7 @@
+- "Journal of consumer research" for total price vs. relative price research
+- is the inclusion of English words in the German texts a good predictor for price?
+- for syllable count: celex
+- is a hyphen between compounds a general property of making things more readable (in advertisement)? Is there a general connection to education in the use of this hyphen? Literature on that?
+- Harald Baayen (Tübingen) might have interesting research on extracting word frequency/sentence frequency and other interesting stuff in German
+- more elaborated category list structure: Jurafsky's menu paper word list
+- for categorization, it might be interesting for me to look at this from a less "linguistic labelling" perspective, but more in how people perceive it -- maybe do a prolific study?
